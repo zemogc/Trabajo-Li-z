@@ -1,0 +1,12 @@
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Parcial Lenguaje Zemog.csproj.AssemblyReference.cache
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Parcial Lenguaje Zemog.Properties.Resources.resources
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Supermarker_mvp.Views.CategoryView.resources
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Supermarket_mvp.Views.MainView.resources
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Supermarker_mvp.Views.PayModeView.resources
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Supermarker_mvp.Views.ProductsView.resources
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Supermarker_mvp.Views.ProvidersView.resources
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Parcial Lenguaje Zemog.csproj.GenerateResource.cache
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Parcial Lenguaje Zemog.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Parcial Lenguaje Zemog.AssemblyInfoInputs.cache
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Parcial Lenguaje Zemog.AssemblyInfo.cs
+C:\Users\zemog\Downloads\Proyecto Li zemog\obj\Debug\net7.0-windows\Parcial Lenguaje Zemog.csproj.CoreCompileInputs.cache
