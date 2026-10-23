@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 # Local configuration overrides
 appsettings.Local.json
+
+# Local build output (test results, coverage)
+artifacts/

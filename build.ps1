@@ -10,6 +10,7 @@
       2. Release build with warnings treated as errors
       3. Unit tests
       4. Integration tests against SQL Server (skipped when Docker is not running)
+      5. Code coverage report in artifacts/coverage (index.html)
 
 .PARAMETER SkipIntegration
     Skips the integration tests even if Docker is available.
@@ -28,6 +29,13 @@ $env:DOTNET_NOLOGO = 'true'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = 'true'
 
 $solution = Join-Path $PSScriptRoot 'Supermarket.slnx'
+$results = Join-Path $PSScriptRoot 'artifacts/test-results'
+$coverage = Join-Path $PSScriptRoot 'artifacts/coverage'
+
+function Invoke-Tests([string] $Project) {
+    dotnet test (Join-Path $PSScriptRoot $Project) --configuration Release --no-build `
+        --collect 'XPlat Code Coverage' --results-directory $results
+}
 
 function Invoke-Step([string] $Name, [scriptblock] $Command) {
     Write-Host "`n==> $Name" -ForegroundColor Cyan
@@ -44,11 +52,14 @@ function Test-Docker {
     return $LASTEXITCODE -eq 0
 }
 
-Invoke-Step 'Restore' { dotnet restore $solution }
+if (Test-Path $results) { Remove-Item $results -Recurse -Force }
+
+Invoke-Step 'Restore' { dotnet restore $solution; if ($LASTEXITCODE -eq 0) { dotnet tool restore } }
 Invoke-Step 'Check formatting' { dotnet format $solution --verify-no-changes --no-restore }
 Invoke-Step 'Build (Release)' { dotnet build $solution --configuration Release --no-restore }
 Invoke-Step 'Unit tests' {
-    dotnet test (Join-Path $PSScriptRoot 'tests/Supermarket.Core.Tests') --configuration Release --no-build
+    Invoke-Tests 'tests/Supermarket.Core.Tests'
+    if ($LASTEXITCODE -eq 0) { Invoke-Tests 'tests/Supermarket.WinForms.Tests' }
 }
 
 if ($SkipIntegration) {
@@ -59,8 +70,14 @@ elseif (-not (Test-Docker)) {
 }
 else {
     Invoke-Step 'Integration tests (SQL Server via Testcontainers)' {
-        dotnet test (Join-Path $PSScriptRoot 'tests/Supermarket.Data.IntegrationTests') --configuration Release --no-build
+        Invoke-Tests 'tests/Supermarket.Data.IntegrationTests'
     }
+}
+
+Invoke-Step 'Coverage report' {
+    dotnet reportgenerator "-reports:$results/**/coverage.cobertura.xml" "-targetdir:$coverage" `
+        '-reporttypes:Html;TextSummary' '-assemblyfilters:+Supermarket;+Supermarket.*;-*.Tests;-*.IntegrationTests' '-filefilters:-*.g.cs' -verbosity:Warning
+    if ($LASTEXITCODE -eq 0) { Get-Content (Join-Path $coverage 'Summary.txt') | Select-Object -First 12 }
 }
 
 Write-Host "`nAll checks passed." -ForegroundColor Green
