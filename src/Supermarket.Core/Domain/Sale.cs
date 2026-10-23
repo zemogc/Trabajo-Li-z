@@ -18,6 +18,13 @@ public sealed class Sale
 
     /// <summary>Number of units sold, adding up every line.</summary>
     public int ItemCount { get; set; }
+
+    /// <summary>Moment the sale was voided, in UTC, or <see langword="null"/> while it is valid.</summary>
+    public DateTime? CancelledAt { get; set; }
+
+    public bool IsCancelled => CancelledAt is not null;
+
+    public string Status => IsCancelled ? "Anulada" : "Registrada";
 }
 
 /// <summary>One product within a sale or within the sale being prepared.</summary>

@@ -12,6 +12,7 @@ internal sealed class FakeSalesView : ISalesView
     public event EventHandler? ClearRequested;
     public event EventHandler? RegisterRequested;
     public event EventHandler? SaleSelected;
+    public event EventHandler? CancelSaleRequested;
 
     public Product? SelectedProduct { get; set; }
 
@@ -67,7 +68,13 @@ internal sealed class FakeSalesView : ISalesView
 
     public void ShowErrors(IReadOnlyList<string> errors) => Errors.AddRange(errors);
 
-    public bool Confirm(string question) => ConfirmAnswer;
+    public List<string> Questions { get; } = [];
+
+    public bool Confirm(string question)
+    {
+        Questions.Add(question);
+        return ConfirmAnswer;
+    }
 
     public void RaiseLoad() => LoadRequested?.Invoke(this, EventArgs.Empty);
 
@@ -80,6 +87,8 @@ internal sealed class FakeSalesView : ISalesView
     public void RaiseRegister() => RegisterRequested?.Invoke(this, EventArgs.Empty);
 
     public void RaiseSaleSelected() => SaleSelected?.Invoke(this, EventArgs.Empty);
+
+    public void RaiseCancelSale() => CancelSaleRequested?.Invoke(this, EventArgs.Empty);
 }
 
 /// <summary>Sale repository backed by an in-memory product list, mimicking the database rules.</summary>
@@ -126,6 +135,34 @@ internal sealed class InMemorySaleRepository(InMemoryRepository<Product> product
         };
         _sales.Add((sale, lines));
         return Task.FromResult(new SaleReceipt(sale.Id, sale.Total));
+    }
+
+    public Task CancelAsync(int saleId, CancellationToken cancellationToken = default)
+    {
+        if (NextFailure is { } failure)
+        {
+            NextFailure = null;
+            throw failure;
+        }
+
+        var (sale, lines) = _sales.SingleOrDefault(s => s.Sale.Id == saleId);
+        if (sale is null)
+        {
+            throw EntityNotFoundException.For<Sale>(saleId);
+        }
+
+        if (sale.IsCancelled)
+        {
+            throw new BusinessRuleException($"La venta #{saleId} ya estaba anulada.");
+        }
+
+        sale.CancelledAt = DateTime.UtcNow;
+        foreach (var line in lines)
+        {
+            products.Items.Single(p => p.Id == line.ProductId).Stock += line.Quantity;
+        }
+
+        return Task.CompletedTask;
     }
 
     public Task<IReadOnlyList<Sale>> GetRecentAsync(int count, CancellationToken cancellationToken = default) =>

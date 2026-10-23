@@ -109,3 +109,10 @@ BEGIN
     CREATE INDEX IX_SaleLines_ProductId ON dbo.SaleLines (ProductId);
 END;
 GO
+
+-- v5: voided sales stay in the history, marked with the moment they were voided.
+IF COL_LENGTH(N'dbo.Sales', N'CancelledAt') IS NULL
+BEGIN
+    ALTER TABLE dbo.Sales ADD CancelledAt DATETIME2(0) NULL;
+END;
+GO

@@ -13,7 +13,14 @@ public interface ISaleRepository
     /// <exception cref="DataConflictException">The payment method no longer exists; nothing is saved.</exception>
     Task<SaleReceipt> RegisterAsync(int paymentMethodId, IReadOnlyList<SaleItem> items, CancellationToken cancellationToken = default);
 
-    /// <summary>Most recent sales first.</summary>
+    /// <summary>
+    /// Voids a sale and returns its units to stock, all or nothing. The sale stays in the history, marked as voided.
+    /// </summary>
+    /// <exception cref="BusinessRuleException">The sale was already voided, possibly by another user.</exception>
+    /// <exception cref="EntityNotFoundException">The sale does not exist.</exception>
+    Task CancelAsync(int saleId, CancellationToken cancellationToken = default);
+
+    /// <summary>Most recent sales first, voided ones included.</summary>
     Task<IReadOnlyList<Sale>> GetRecentAsync(int count, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<SaleLine>> GetLinesAsync(int saleId, CancellationToken cancellationToken = default);

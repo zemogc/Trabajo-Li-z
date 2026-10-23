@@ -140,6 +140,49 @@ public class SaleRepositoryTests(SqlServerFixture database) : DatabaseTest(datab
         Assert.Equal(4800m, Assert.Single(await Database.Sales.GetLinesAsync(receipt.SaleId)).UnitPrice);
     }
 
+
+    [Fact]
+    public async Task Cancelling_restores_stock_and_keeps_the_sale_in_history()
+    {
+        await SeedAsync(riceStock: 10, milkStock: 5);
+        var receipt = await Database.Sales.RegisterAsync(_cash, [new SaleItem(_rice, 3), new SaleItem(_milk, 2)]);
+
+        await Database.Sales.CancelAsync(receipt.SaleId);
+
+        Assert.Equal(10, await StockOfAsync(_rice));
+        Assert.Equal(5, await StockOfAsync(_milk));
+        var sale = Assert.Single(await Database.Sales.GetRecentAsync(10));
+        Assert.True(sale.IsCancelled);
+        Assert.Equal(receipt.Total, sale.Total);
+    }
+
+    [Fact]
+    public async Task Concurrent_cancellations_restore_stock_only_once()
+    {
+        await SeedAsync(riceStock: 10, milkStock: 5);
+        var receipt = await Database.Sales.RegisterAsync(_cash, [new SaleItem(_rice, 4)]);
+
+        var attempts = await Task.WhenAll(Enumerable.Range(0, 5).Select(async _ =>
+        {
+            try
+            {
+                await Database.Sales.CancelAsync(receipt.SaleId);
+                return true;
+            }
+            catch (BusinessRuleException)
+            {
+                return false;
+            }
+        }));
+
+        Assert.Equal(1, attempts.Count(succeeded => succeeded));
+        Assert.Equal(10, await StockOfAsync(_rice));
+    }
+
+    [Fact]
+    public async Task Cancelling_an_unknown_sale_throws_not_found() =>
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => Database.Sales.CancelAsync(424_242));
+
     private async Task SeedAsync(int riceStock, int milkStock)
     {
         var grains = await Database.Categories.AddAsync(new Category { Name = "Granos" });
