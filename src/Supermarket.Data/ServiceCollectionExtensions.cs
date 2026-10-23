@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IRepository<PaymentMethod>, PaymentMethodRepository>();
         services.AddTransient<IRepository<Product>, ProductRepository>();
         services.AddTransient<ISaleRepository, SaleRepository>();
+        services.AddTransient<IReportRepository, ReportRepository>();
 
         return services;
     }

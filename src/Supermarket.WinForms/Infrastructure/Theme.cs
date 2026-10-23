@@ -18,4 +18,5 @@ internal static class Theme
 
     public static readonly Font TitleFont = new("Segoe UI Semibold", 16f);
     public static readonly Font SectionFont = new("Segoe UI Semibold", 11f);
+    public static readonly Font KpiFont = new("Segoe UI Semibold", 22f);
 }

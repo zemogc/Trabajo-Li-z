@@ -76,6 +76,28 @@ public class FormRenderingTests
         Render(form, "product-editor.png");
     });
 
+    [Fact]
+    public void Dashboard_renders_todays_figures() => RunOnStaThread(() =>
+    {
+        using var form = new DashboardForm();
+        Prepare(form);
+
+        form.DisplayToday(new SalesSummary { SalesCount = 3, Revenue = 43300m, UnitsSold = 12 }, productsToRestock: 1);
+        form.DisplayTopProducts(
+        [
+            new ProductSales { ProductName = "Agua sin gas 600 ml", Units = 6, Revenue = 10800m },
+            new ProductSales { ProductName = "Arroz 1 kg", Units = 3, Revenue = 14400m },
+        ]);
+        form.DisplayPaymentBreakdown(
+        [
+            new PaymentMethodSales { PaymentMethodName = "Efectivo", SalesCount = 2, Total = 32500m },
+            new PaymentMethodSales { PaymentMethodName = "Tarjeta débito", SalesCount = 1, Total = 10800m },
+        ]);
+        form.DisplayProductsToRestock([Products[1]]);
+
+        Render(form, "dashboard.png");
+    });
+
     private static void Prepare(Form form)
     {
         // Hosted like MainForm does it: as a child window. A child of no visible parent is
