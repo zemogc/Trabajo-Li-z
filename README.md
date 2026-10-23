@@ -1,6 +1,6 @@
 # Supermarket
 
-Aplicación de escritorio para administrar el catálogo de un supermercado: productos, categorías, proveedores y medios de pago.
+Aplicación de escritorio para operar un supermercado: registro de ventas con control de inventario, y administración de productos, categorías, proveedores y medios de pago.
 
 Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el patrón **Model-View-Presenter (Passive View)**.
 
@@ -8,6 +8,7 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 
 ## Funcionalidades
 
+- **Ventas:** carrito con validación de stock, medio de pago y total. Al registrar, la venta se guarda en una transacción y el stock se descuenta de forma atómica. Incluye el historial de ventas recientes con el detalle de cada una.
 - CRUD completo de productos, categorías, proveedores y medios de pago.
 - Búsqueda por código o por nombre parcial. En productos también busca por categoría y por proveedor.
 - Cada producto puede tener un proveedor habitual. Un proveedor o una categoría en uso no se puede eliminar.
@@ -17,7 +18,7 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 - Validación en dos niveles: reglas de dominio con Data Annotations y restricciones en la base de datos (`UNIQUE`, `CHECK`, `FOREIGN KEY`).
 - Mensajes claros para errores esperados: nombres duplicados, registros en uso o registros eliminados por otro usuario.
 - Base de datos creada y migrada automáticamente al iniciar, con datos de ejemplo opcionales.
-- Atajos de teclado: `Ctrl+N` nuevo, `Ctrl+F` buscar, `Enter` editar, `Supr` eliminar, `Esc` cancelar.
+- Atajos de teclado: `Ctrl+N` nuevo, `Ctrl+F` buscar, `Enter` editar, `Supr` eliminar, `Esc` cancelar. En ventas, `Enter` en la cantidad agrega el producto y `F9` registra la venta.
 
 ![Edición de un producto](docs/product-editor.png)
 
@@ -55,10 +56,12 @@ flowchart LR
 ### Decisiones técnicas
 
 - **Presentadores sin UI.** Las vistas implementan `ICrudView<T>`, solo exponen eventos y métodos de renderizado, y no contienen lógica. Esto permite probar todo el flujo (cargar, buscar, crear, editar, eliminar y manejar errores) con dobles de prueba.
-- **Un presentador genérico.** `CrudPresenter<T>` implementa el flujo una sola vez. `CatalogPresenter<T>` y `ProductPresenter` solo agregan lo que es propio de cada uno, en lugar de duplicar cuatro presentadores casi idénticos.
+- **Un presentador genérico.** `CrudPresenter<T>` implementa el flujo una sola vez. `CatalogPresenter<T>` y `ProductPresenter` solo agregan lo que es propio de cada uno, en lugar de duplicar cuatro presentadores casi idénticos. `PresenterBase` centraliza el estado de "ocupado" y el manejo de errores que comparten el CRUD y las ventas.
+- **Ventas sin sobreventa.** El stock se descuenta con un `UPDATE ... WHERE Stock >= @Quantity` dentro de una transacción. Si un producto no alcanza, se revierte toda la venta. Una prueba de integración lanza cinco ventas simultáneas por la última unidad y verifica que solo una se registre. Los productos se bloquean siempre en el mismo orden para evitar deadlocks.
+- **El precio lo pone el servidor.** El cliente solo envía producto y cantidad. El precio unitario se toma de la base al momento de vender y queda guardado en la línea, así que un cambio de precio posterior no altera las ventas pasadas.
 - **Excepciones de dominio.** Los repositorios convierten los errores 547, 2601 y 2627 de SQL Server en `DataConflictException`, y las filas afectadas = 0 en `EntityNotFoundException`. Los presentadores nunca dependen del proveedor de base de datos.
 - **SQL seguro.** Todos los valores viajan como parámetros. Los comodines de `LIKE` (`%`, `_`, `[`) se escapan para que buscar "50%" encuentre exactamente eso.
-- **Esquema versionado.** Los scripts `schema.sql` y `seed.sql` son idempotentes, van embebidos en el ensamblado y son los mismos que usan la aplicación y las pruebas de integración. Los cambios de esquema se agregan como pasos que actualizan bases existentes (`MinimumStock`, `ProviderId`), y una prueba de integración parte de una base con el esquema original y verifica la actualización.
+- **Esquema versionado.** Los scripts `schema.sql` y `seed.sql` son idempotentes, van embebidos en el ensamblado y son los mismos que usan la aplicación y las pruebas de integración. Los cambios de esquema se agregan como pasos que actualizan bases existentes (`MinimumStock`, `ProviderId`, tablas de ventas), y una prueba de integración parte de una base con el esquema original y verifica la actualización.
 - **Async de punta a punta**, con protección contra dobles clics mientras hay una operación en curso.
 - **Calidad en la compilación:** `TreatWarningsAsErrors`, analizadores .NET (`latest-recommended`), estilo de código verificado en el build, gestión central de paquetes y auditoría de vulnerabilidades de NuGet.
 
@@ -115,7 +118,7 @@ Si Docker no está corriendo, el script omite las pruebas de integración y lo i
 # Pruebas unitarias de dominio y presentadores (rápidas, sin dependencias externas)
 dotnet test tests/Supermarket.Core.Tests
 
-# Pruebas de la capa WinForms: ordenamiento y exportación CSV
+# Pruebas de la capa WinForms: ordenamiento, exportación CSV y renderizado de pantallas
 dotnet test tests/Supermarket.WinForms.Tests
 
 # Pruebas de integración contra un SQL Server real (requiere Docker)
@@ -126,11 +129,11 @@ Cobertura de líneas medida con `build.ps1`:
 
 | Capa | Cobertura |
 | --- | --- |
-| `Supermarket.Core` | 92 % |
-| `Supermarket.Data` | 94 % |
-| `Supermarket.WinForms` | 8 % |
+| `Supermarket.Core` | 94 % |
+| `Supermarket.Data` | 96 % |
+| `Supermarket.WinForms` | 65 % |
 
-La lógica vive en `Core` y `Data`, que están cubiertos casi por completo. Los formularios WinForms solo dibujan y reenvían eventos; esa capa se prueba manualmente y con pruebas unitarias de sus componentes no visuales.
+La lógica vive en `Core` y `Data`, que están cubiertos casi por completo. En la capa WinForms, además de probar sus componentes no visuales, hay pruebas de humo que construyen cada pantalla fuera de pantalla, le pasan datos por su interfaz de vista y la dibujan a una imagen, sin abrir ninguna ventana. Las rutas de arranque y los diálogos se prueban manualmente.
 
 Las pruebas de integración usan [Testcontainers](https://dotnet.testcontainers.org/) para levantar un SQL Server 2022 desechable. Validan los repositorios, las restricciones de la base de datos y el inicializador contra el motor real, no contra un simulador en memoria.
 
@@ -143,7 +146,7 @@ Las pruebas de integración usan [Testcontainers](https://dotnet.testcontainers.
 │   └── Supermarket.WinForms      # Vistas y composition root
 ├── tests
 │   ├── Supermarket.Core.Tests                 # xUnit, sin base de datos
-│   ├── Supermarket.WinForms.Tests             # Ordenamiento y exportación CSV
+│   ├── Supermarket.WinForms.Tests             # Ordenamiento, CSV y renderizado de pantallas
 │   └── Supermarket.Data.IntegrationTests      # xUnit + Testcontainers
 ├── build.ps1                     # Verificación local: formato, build y pruebas
 ├── Directory.Build.props         # Configuración común de compilación y análisis
