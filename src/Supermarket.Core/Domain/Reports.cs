@@ -46,12 +46,25 @@ public readonly record struct DateRange(DateTime FromUtc, DateTime ToUtc)
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentOutOfRangeException.ThrowIfNegative(daysBack);
 
-        var zone = clock.LocalTimeZone;
-        var today = clock.GetLocalNow().Date;
+        var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
+        return LocalDates(today.AddDays(-daysBack), today, clock.LocalTimeZone);
+    }
+
+    /// <summary>
+    /// The local calendar days from <paramref name="first"/> to <paramref name="last"/>, both included,
+    /// converted to UTC.
+    /// </summary>
+    public static DateRange LocalDates(DateOnly first, DateOnly last, TimeZoneInfo zone)
+    {
+        ArgumentNullException.ThrowIfNull(zone);
+        if (last < first)
+        {
+            throw new ArgumentException("The last day cannot be before the first one.", nameof(last));
+        }
 
         return new DateRange(
-            StartOfLocalDayInUtc(today.AddDays(-daysBack), zone),
-            StartOfLocalDayInUtc(today.AddDays(1), zone));
+            StartOfLocalDayInUtc(first.ToDateTime(TimeOnly.MinValue), zone),
+            StartOfLocalDayInUtc(last.AddDays(1).ToDateTime(TimeOnly.MinValue), zone));
     }
 
     private static DateTime StartOfLocalDayInUtc(DateTime localMidnight, TimeZoneInfo zone)

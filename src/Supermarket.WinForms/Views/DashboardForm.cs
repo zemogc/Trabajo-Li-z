@@ -9,10 +9,10 @@ namespace Supermarket.WinForms.Views;
 /// <summary>Home screen: today's figures, best sellers and the products that need restocking.</summary>
 internal sealed class DashboardForm : Form, IDashboardView
 {
-    private readonly Label _salesCount = CardValue();
-    private readonly Label _revenue = CardValue();
-    private readonly Label _averageTicket = CardValue();
-    private readonly Label _toRestock = CardValue();
+    private readonly Label _salesCount = Ui.CardValue();
+    private readonly Label _revenue = Ui.CardValue();
+    private readonly Label _averageTicket = Ui.CardValue();
+    private readonly Label _toRestock = Ui.CardValue();
     private readonly DataGridView _topProducts = Ui.Grid();
     private readonly DataGridView _paymentMethods = Ui.Grid();
     private readonly DataGridView _restock = Ui.Grid();
@@ -56,9 +56,9 @@ internal sealed class DashboardForm : Form, IDashboardView
             grid.DataBindingComplete += (_, _) => grid.ClearSelection();
         }
 
-        body.Controls.Add(Box("Más vendidos (últimos 30 días)", _topProducts), 0, 0);
-        body.Controls.Add(Box("Ventas de hoy por medio de pago", _paymentMethods), 1, 0);
-        var restockBox = Box("Productos por reponer", _restock);
+        body.Controls.Add(Ui.Box("Más vendidos (últimos 30 días)", _topProducts), 0, 0);
+        body.Controls.Add(Ui.Box("Ventas de hoy por medio de pago", _paymentMethods), 1, 0);
+        var restockBox = Ui.Box("Productos por reponer", _restock);
         body.Controls.Add(restockBox, 0, 1);
         body.SetColumnSpan(restockBox, 2);
 
@@ -68,10 +68,10 @@ internal sealed class DashboardForm : Form, IDashboardView
             cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
         }
 
-        cards.Controls.Add(Card("Ventas de hoy", _salesCount), 0, 0);
-        cards.Controls.Add(Card("Ingresos de hoy", _revenue), 1, 0);
-        cards.Controls.Add(Card("Ticket promedio", _averageTicket), 2, 0);
-        cards.Controls.Add(Card("Productos por reponer", _toRestock), 3, 0);
+        cards.Controls.Add(Ui.Card("Ventas de hoy", _salesCount), 0, 0);
+        cards.Controls.Add(Ui.Card("Ingresos de hoy", _revenue), 1, 0);
+        cards.Controls.Add(Ui.Card("Ticket promedio", _averageTicket), 2, 0);
+        cards.Controls.Add(Ui.Card("Productos por reponer", _toRestock), 3, 0);
 
         var statusBar = new StatusStrip { SizingGrip = false, BackColor = Theme.Surface };
         statusBar.Items.Add(_status);
@@ -127,35 +127,5 @@ internal sealed class DashboardForm : Form, IDashboardView
         {
             LoadRequested?.Invoke(this, EventArgs.Empty);
         }
-    }
-
-    private static Label CardValue() => new()
-    {
-        Dock = DockStyle.Fill,
-        Font = Theme.KpiFont,
-        TextAlign = ContentAlignment.MiddleLeft,
-        Text = "—",
-    };
-
-    private static Panel Card(string title, Label value)
-    {
-        var card = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = Color.White,
-            Margin = new Padding(10, 0, 10, 10),
-            Padding = new Padding(16, 10, 16, 6),
-        };
-        card.Controls.Add(value);
-        card.Controls.Add(new Label { Text = title, Dock = DockStyle.Top, Height = 24, ForeColor = Theme.MutedText });
-        return card;
-    }
-
-    private static Panel Box(string title, DataGridView grid)
-    {
-        var box = new Panel { Dock = DockStyle.Fill, Margin = new Padding(10, 6, 10, 0) };
-        box.Controls.Add(grid);
-        box.Controls.Add(Ui.Section(title));
-        return box;
     }
 }
