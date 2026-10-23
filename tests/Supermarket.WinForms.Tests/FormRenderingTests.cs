@@ -122,6 +122,26 @@ public class FormRenderingTests
         Render(form, "stock-entries.png");
     });
 
+    [Fact]
+    public void Reports_screen_renders_a_period() => RunOnStaThread(() =>
+    {
+        using var form = new ReportsForm();
+        Prepare(form);
+
+        form.SetPeriod(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 23));
+        form.DisplaySummary(new SalesSummary { SalesCount = 128, Revenue = 4_350_900m, UnitsSold = 512 });
+        form.DisplaySales(
+        [
+            new Sale { Id = 130, CreatedAt = DateTime.UtcNow, PaymentMethodName = "Efectivo", ItemCount = 3, Total = 19300m },
+            new Sale { Id = 129, CreatedAt = DateTime.UtcNow.AddHours(-2), PaymentMethodName = "Tarjeta débito", ItemCount = 6, Total = 10800m, CancelledAt = DateTime.UtcNow },
+        ]);
+        form.DisplayPaymentBreakdown([new PaymentMethodSales { PaymentMethodName = "Efectivo", SalesCount = 90, Total = 3_100_000m }]);
+        form.DisplayTopProducts([new ProductSales { ProductName = "Arroz 1 kg", Units = 140, Revenue = 672_000m }]);
+
+        Assert.Equal(new DateOnly(2026, 10, 1), form.FirstDay);
+        Render(form, "reports.png");
+    });
+
     private static void Prepare(Form form)
     {
         // Hosted like MainForm does it: as a child window. A child of no visible parent is

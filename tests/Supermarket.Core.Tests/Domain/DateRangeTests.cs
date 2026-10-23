@@ -30,6 +30,20 @@ public class DateRangeTests
     }
 
     [Fact]
+    public void Local_dates_include_both_days()
+    {
+        var september = DateRange.LocalDates(new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30), FakeClock.Bogota);
+
+        Assert.Equal(new DateTime(2026, 9, 1, 5, 0, 0, DateTimeKind.Utc), september.FromUtc);
+        Assert.Equal(new DateTime(2026, 10, 1, 5, 0, 0, DateTimeKind.Utc), september.ToUtc);
+    }
+
+    [Fact]
+    public void Local_dates_cannot_be_inverted() =>
+        Assert.Throws<ArgumentException>(() =>
+            DateRange.LocalDates(new DateOnly(2026, 9, 2), new DateOnly(2026, 9, 1), FakeClock.Bogota));
+
+    [Fact]
     public void Negative_days_are_rejected() =>
         Assert.Throws<ArgumentOutOfRangeException>(() => DateRange.LocalDays(TimeProvider.System, -1));
 

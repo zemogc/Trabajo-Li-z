@@ -25,6 +25,8 @@ internal static class Glyph
     public const char Home = '\uE80F';
     public const char StockEntry = '\uE7B8';
     public const char Print = '\uE749';
+    public const char Calendar = '\uE787';
+    public const char Chart = '\uE9D2';
 
     private const string FontFamily = "Segoe MDL2 Assets";
 
