@@ -17,6 +17,8 @@ public partial class CrudPresenter<TEntity>
     internal const string NotFoundMessage = "El registro ya no existe; es posible que otro usuario lo haya eliminado. La lista se actualizó.";
     internal const string UnexpectedErrorMessage = "Ocurrió un error inesperado. Revise la conexión con la base de datos e intente de nuevo.";
 
+    internal static string NoResultsMessage(string term) => $"No se encontraron resultados para \"{term}\".";
+
     private readonly ICrudView<TEntity> _view;
     private readonly IRepository<TEntity> _repository;
     private readonly ILogger _logger;
@@ -53,7 +55,15 @@ public partial class CrudPresenter<TEntity>
         await RefreshAsync();
     });
 
-    public Task SearchAsync() => RunAsync(RefreshAsync);
+    public Task SearchAsync() => RunAsync(async () =>
+    {
+        var found = await RefreshAsync();
+        var term = _view.SearchTerm.Trim();
+        if (found == 0 && term.Length > 0)
+        {
+            _view.ShowMessage(NoResultsMessage(term));
+        }
+    });
 
     public void BeginCreate()
     {
@@ -157,7 +167,8 @@ public partial class CrudPresenter<TEntity>
         entity.Name = entity.Name.Trim();
     }
 
-    private async Task RefreshAsync()
+    /// <returns>The number of entities displayed.</returns>
+    private async Task<int> RefreshAsync()
     {
         var term = _view.SearchTerm.Trim();
         var entities = term.Length == 0
@@ -165,6 +176,7 @@ public partial class CrudPresenter<TEntity>
             : await _repository.SearchAsync(term);
 
         _view.DisplayEntities(entities);
+        return entities.Count;
     }
 
     private async Task RunAsync(Func<Task> operation)
