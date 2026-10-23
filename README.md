@@ -10,6 +10,7 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 
 - CRUD completo de productos, categorías, proveedores y medios de pago.
 - Búsqueda por código o por nombre parcial. En productos también busca por categoría.
+- Stock mínimo por producto: los productos que necesitan reposición se resaltan, y la barra de estado indica cuántos son.
 - Validación en dos niveles: reglas de dominio con Data Annotations y restricciones en la base de datos (`UNIQUE`, `CHECK`, `FOREIGN KEY`).
 - Mensajes claros para errores esperados: nombres duplicados, registros en uso o registros eliminados por otro usuario.
 - Base de datos creada y migrada automáticamente al iniciar, con datos de ejemplo opcionales.
@@ -54,7 +55,7 @@ flowchart LR
 - **Un presentador genérico.** `CrudPresenter<T>` implementa el flujo una sola vez. `CatalogPresenter<T>` y `ProductPresenter` solo agregan lo que es propio de cada uno, en lugar de duplicar cuatro presentadores casi idénticos.
 - **Excepciones de dominio.** Los repositorios convierten los errores 547, 2601 y 2627 de SQL Server en `DataConflictException`, y las filas afectadas = 0 en `EntityNotFoundException`. Los presentadores nunca dependen del proveedor de base de datos.
 - **SQL seguro.** Todos los valores viajan como parámetros. Los comodines de `LIKE` (`%`, `_`, `[`) se escapan para que buscar "50%" encuentre exactamente eso.
-- **Esquema versionado.** Los scripts `schema.sql` y `seed.sql` son idempotentes, van embebidos en el ensamblado y son los mismos que usan la aplicación y las pruebas de integración.
+- **Esquema versionado.** Los scripts `schema.sql` y `seed.sql` son idempotentes, van embebidos en el ensamblado y son los mismos que usan la aplicación y las pruebas de integración. Los cambios de esquema se agregan como pasos que actualizan bases existentes (por ejemplo, la columna `MinimumStock`), y una prueba de integración verifica esa actualización.
 - **Async de punta a punta**, con protección contra dobles clics mientras hay una operación en curso.
 - **Calidad en la compilación:** `TreatWarningsAsErrors`, analizadores .NET (`latest-recommended`), estilo de código verificado en el build, gestión central de paquetes y auditoría de vulnerabilidades de NuGet.
 
@@ -92,6 +93,17 @@ Crea `src/Supermarket.WinForms/appsettings.Local.json`. Git lo ignora, así que 
 }
 ```
 
+## Verificación local
+
+`build.ps1` ejecuta los mismos controles que correría un servidor de integración continua, pero en tu máquina:
+
+```powershell
+./build.ps1                    # formato, build Release, pruebas unitarias y de integración
+./build.ps1 -SkipIntegration   # sin Docker
+```
+
+Si Docker no está corriendo, el script omite las pruebas de integración y lo indica.
+
 ## Pruebas
 
 ```bash
@@ -114,6 +126,7 @@ Las pruebas de integración usan [Testcontainers](https://dotnet.testcontainers.
 ├── tests
 │   ├── Supermarket.Core.Tests                 # xUnit, sin base de datos
 │   └── Supermarket.Data.IntegrationTests      # xUnit + Testcontainers
+├── build.ps1                     # Verificación local: formato, build y pruebas
 ├── Directory.Build.props         # Configuración común de compilación y análisis
 ├── Directory.Packages.props      # Versiones centralizadas de NuGet
 └── docker-compose.yml            # SQL Server local para desarrollo
