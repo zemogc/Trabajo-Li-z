@@ -16,11 +16,19 @@ internal sealed class ModuleFactory(IServiceProvider services)
 {
     public IReadOnlyList<Module> Modules { get; } =
     [
+        new("Ventas", Infrastructure.Glyph.Sale, () => CreateSales(services)),
         new("Productos", Infrastructure.Glyph.Product, () => CreateProducts(services)),
         new("Categorías", Infrastructure.Glyph.Category, () => CreateCatalog<Category>(services, "Categorías")),
         new("Proveedores", Infrastructure.Glyph.Provider, () => CreateCatalog<Provider>(services, "Proveedores")),
         new("Medios de pago", Infrastructure.Glyph.Payment, () => CreateCatalog<PaymentMethod>(services, "Medios de pago")),
     ];
+
+    private static SalesForm CreateSales(IServiceProvider services)
+    {
+        var view = new SalesForm();
+        ActivatorUtilities.CreateInstance<SalesPresenter>(services, view);
+        return view;
+    }
 
     private static ProductForm CreateProducts(IServiceProvider services)
     {
