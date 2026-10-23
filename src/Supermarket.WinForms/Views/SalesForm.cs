@@ -53,6 +53,7 @@ internal sealed class SalesForm : Form, ISalesView
 
     // Rebinding the history grid moves its selection; that must not look like a user choice.
     private bool _bindingHistory;
+    private Font? _strikeout;
 
     public SalesForm()
     {
@@ -86,6 +87,8 @@ internal sealed class SalesForm : Form, ISalesView
     public event EventHandler? RegisterRequested;
 
     public event EventHandler? SaleSelected;
+
+    public event EventHandler? CancelSaleRequested;
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -272,7 +275,19 @@ internal sealed class SalesForm : Form, ISalesView
         _history.Columns.Add(Ui.Column(nameof(Sale.Id), "N.º", fillWeight: 10, minimumWidth: 55));
         _history.Columns.Add(Ui.Column(nameof(Sale.CreatedAtLocal), "Fecha", fillWeight: 38, format: "dd/MM/yyyy HH:mm", minimumWidth: 140));
         _history.Columns.Add(Ui.Column(nameof(Sale.PaymentMethodName), "Pago", fillWeight: 26, minimumWidth: 90));
+        _history.Columns.Add(Ui.Column(nameof(Sale.Status), "Estado", fillWeight: 20, minimumWidth: 85));
         _history.Columns.Add(Ui.Column(nameof(Sale.Total), "Total", fillWeight: 26, format: "N2", alignRight: true, minimumWidth: 100));
+
+        // Voided sales stay visible but clearly out of the totals.
+        _history.CellFormatting += (_, e) =>
+        {
+            if (e.RowIndex >= 0 && e.CellStyle is not null
+                && _history.Rows[e.RowIndex].DataBoundItem is Sale { IsCancelled: true })
+            {
+                e.CellStyle.ForeColor = Theme.MutedText;
+                e.CellStyle.Font = _strikeout ??= new Font(_history.Font, FontStyle.Strikeout);
+            }
+        };
         _history.SelectionChanged += (_, _) =>
         {
             if (!_bindingHistory)
@@ -285,12 +300,29 @@ internal sealed class SalesForm : Form, ISalesView
         _historyLines.Columns.Add(Ui.Column(nameof(SaleLine.Quantity), "Cant.", fillWeight: 16, format: "N0", alignRight: true, minimumWidth: 60, sortable: false));
         _historyLines.Columns.Add(Ui.Column(nameof(SaleLine.Subtotal), "Subtotal", fillWeight: 34, format: "N2", alignRight: true, minimumWidth: 100, sortable: false));
 
+        var historyActions = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, WrapContents = false, Padding = new Padding(0, 8, 0, 0) };
+        var cancel = Ui.Button("Anular venta", Glyph.Cancel, (_, _) => CancelSaleRequested?.Invoke(this, EventArgs.Empty));
+        cancel.ForeColor = Theme.Danger;
+        cancel.Image = Glyph.Render(Glyph.Cancel, Theme.Danger);
+        historyActions.Controls.Add(cancel);
+
         var details = new Panel { Dock = DockStyle.Bottom, Height = 220, Padding = new Padding(0, 12, 0, 0) };
         details.Controls.Add(_historyLines);
         details.Controls.Add(Ui.Section("Detalle de la venta seleccionada"));
 
         _sidebar.Controls.Add(_history);
+        _sidebar.Controls.Add(historyActions);
         _sidebar.Controls.Add(details);
         _sidebar.Controls.Add(Ui.Section("Últimas ventas"));
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _strikeout?.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 }

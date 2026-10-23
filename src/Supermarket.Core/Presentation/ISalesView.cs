@@ -18,6 +18,8 @@ public interface ISalesView : IOperationView
     /// <summary>Raised when a sale is selected in the history to see its lines.</summary>
     event EventHandler? SaleSelected;
 
+    event EventHandler? CancelSaleRequested;
+
     Product? SelectedProduct { get; }
 
     int Quantity { get; }

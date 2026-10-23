@@ -69,6 +69,47 @@ internal sealed class SaleRepository(IDbConnectionFactory connections) : ISaleRe
         }
     }
 
+    public async Task CancelAsync(int saleId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await connections.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+
+        // Marking the sale is the guard: only one of two concurrent voids can change
+        // CancelledAt from NULL, so stock is never returned twice.
+        var marked = await connection.ExecuteAsync(new CommandDefinition(
+            "UPDATE dbo.Sales SET CancelledAt = SYSUTCDATETIME() WHERE Id = @saleId AND CancelledAt IS NULL;",
+            new { saleId },
+            transaction,
+            cancellationToken: cancellationToken)).ConfigureAwait(false);
+
+        if (marked == 0)
+        {
+            var exists = await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+                "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Sales WHERE Id = @saleId) THEN 1 ELSE 0 END AS BIT);",
+                new { saleId },
+                transaction,
+                cancellationToken: cancellationToken)).ConfigureAwait(false);
+
+            throw exists
+                ? new BusinessRuleException($"La venta #{saleId} ya estaba anulada.")
+                : EntityNotFoundException.For<Sale>(saleId);
+        }
+
+        await connection.ExecuteAsync(new CommandDefinition(
+            """
+            UPDATE p
+            SET Stock = p.Stock + l.Quantity
+            FROM dbo.Products AS p
+            INNER JOIN dbo.SaleLines AS l ON l.ProductId = p.Id
+            WHERE l.SaleId = @saleId;
+            """,
+            new { saleId },
+            transaction,
+            cancellationToken: cancellationToken)).ConfigureAwait(false);
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<Sale>> GetRecentAsync(int count, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
@@ -77,7 +118,7 @@ internal sealed class SaleRepository(IDbConnectionFactory connections) : ISaleRe
         var sales = await connection.QueryAsync<Sale>(new CommandDefinition(
             """
             SELECT TOP (@count)
-                   s.Id, s.CreatedAt, s.PaymentMethodId, pm.Name AS PaymentMethodName, s.Total,
+                   s.Id, s.CreatedAt, s.CancelledAt, s.PaymentMethodId, pm.Name AS PaymentMethodName, s.Total,
                    (SELECT SUM(l.Quantity) FROM dbo.SaleLines AS l WHERE l.SaleId = s.Id) AS ItemCount
             FROM dbo.Sales AS s
             INNER JOIN dbo.PaymentMethods AS pm ON pm.Id = s.PaymentMethodId

@@ -12,12 +12,14 @@ public sealed partial class SalesPresenter : PresenterBase
     internal const string EmptyCartMessage = "Agregue al menos un producto a la venta.";
     internal const string PaymentMethodRequiredMessage = "Seleccione el medio de pago.";
     internal const string ClearCartQuestion = "¿Desea vaciar la venta en curso?";
+    internal const string SaleRequiredMessage = "Seleccione en el historial la venta que desea anular.";
 
     private readonly ISalesView _view;
     private readonly ISaleRepository _sales;
     private readonly IRepository<Product> _products;
     private readonly IRepository<PaymentMethod> _paymentMethods;
     private readonly ILogger _logger;
+    private IReadOnlyList<Sale> _recentSales = [];
 
     public SalesPresenter(
         ISalesView view,
@@ -43,12 +45,20 @@ public sealed partial class SalesPresenter : PresenterBase
         _view.ClearRequested += (_, _) => ClearCart();
         _view.RegisterRequested += async (_, _) => await RegisterAsync();
         _view.SaleSelected += async (_, _) => await ShowSelectedSaleAsync();
+        _view.CancelSaleRequested += async (_, _) => await CancelSelectedSaleAsync();
     }
 
     public SaleDraft Draft { get; } = new();
 
     internal static string RegisteredMessage(int saleId, decimal total) =>
         $"Venta #{saleId} registrada. Total: {total:N2}";
+
+    internal static string AlreadyCancelledMessage(int saleId) => $"La venta #{saleId} ya está anulada.";
+
+    internal static string CancelQuestion(Sale sale) =>
+        $"¿Anular la venta #{sale.Id} por {sale.Total:N2}? Las unidades vendidas volverán al inventario.";
+
+    internal static string CancelledMessage(int saleId) => $"Venta #{saleId} anulada. El stock fue restablecido.";
 
     public Task LoadAsync() => RunAsync(async () =>
     {
@@ -148,15 +158,51 @@ public sealed partial class SalesPresenter : PresenterBase
         return RunAsync(async () => _view.DisplaySaleLines(await _sales.GetLinesAsync(saleId)));
     }
 
+    public Task CancelSelectedSaleAsync()
+    {
+        var sale = _view.SelectedSaleId is { } saleId ? _recentSales.FirstOrDefault(s => s.Id == saleId) : null;
+        if (sale is null)
+        {
+            _view.ShowMessage(SaleRequiredMessage);
+            return Task.CompletedTask;
+        }
+
+        if (sale.IsCancelled)
+        {
+            _view.ShowMessage(AlreadyCancelledMessage(sale.Id));
+            return Task.CompletedTask;
+        }
+
+        if (!_view.Confirm(CancelQuestion(sale)))
+        {
+            return Task.CompletedTask;
+        }
+
+        return RunAsync(
+            async () =>
+            {
+                await _sales.CancelAsync(sale.Id);
+                LogSaleCancelled(sale.Id);
+                await RefreshProductsAndHistoryAsync();
+                _view.ShowMessage(CancelledMessage(sale.Id));
+            },
+            onNotFound: RefreshProductsAndHistoryAsync);
+    }
+
     private async Task RefreshProductsAndHistoryAsync()
     {
         var products = await _products.GetAllAsync();
         _view.DisplayProducts(products.Where(p => p.Stock > 0).ToList());
-        _view.DisplayRecentSales(await _sales.GetRecentAsync(RecentSalesCount));
+
+        _recentSales = await _sales.GetRecentAsync(RecentSalesCount);
+        _view.DisplayRecentSales(_recentSales);
     }
 
     private void DisplayCart() => _view.DisplayCart(Draft.Lines, Draft.Total);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Sale {SaleId} registered for {Total}")]
     private partial void LogSaleRegistered(int saleId, decimal total);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Sale {SaleId} cancelled")]
+    private partial void LogSaleCancelled(int saleId);
 }

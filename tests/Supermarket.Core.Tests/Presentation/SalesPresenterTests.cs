@@ -180,4 +180,77 @@ public class SalesPresenterTests
         _view.RaiseRemoveItem();
         Assert.Empty(_view.Cart);
     }
+
+    [Fact]
+    public async Task Cancelling_a_sale_asks_first_and_restores_stock()
+    {
+        await RegisterRiceSaleAsync(quantity: 4);
+        _view.SelectedSaleId = 1;
+
+        await _presenter.CancelSelectedSaleAsync();
+
+        Assert.Contains("#1", Assert.Single(_view.Questions), StringComparison.Ordinal);
+        Assert.Equal(10, Rice.Stock);
+        Assert.True(Assert.Single(_view.RecentSales).IsCancelled);
+        Assert.Equal(SalesPresenter.CancelledMessage(1), _view.Messages[^1]);
+    }
+
+    [Fact]
+    public async Task Declining_the_confirmation_keeps_the_sale()
+    {
+        await RegisterRiceSaleAsync(quantity: 4);
+        _view.SelectedSaleId = 1;
+        _view.ConfirmAnswer = false;
+
+        await _presenter.CancelSelectedSaleAsync();
+
+        Assert.Equal(6, Rice.Stock);
+        Assert.False(Assert.Single(_view.RecentSales).IsCancelled);
+    }
+
+    [Fact]
+    public async Task Cancelled_sales_are_not_cancelled_again()
+    {
+        await RegisterRiceSaleAsync(quantity: 4);
+        _view.SelectedSaleId = 1;
+        await _presenter.CancelSelectedSaleAsync();
+        _view.Questions.Clear();
+
+        await _presenter.CancelSelectedSaleAsync();
+
+        Assert.Empty(_view.Questions);
+        Assert.Equal(SalesPresenter.AlreadyCancelledMessage(1), _view.Messages[^1]);
+        Assert.Equal(10, Rice.Stock);
+    }
+
+    [Fact]
+    public async Task Cancelling_needs_a_selected_sale()
+    {
+        await _presenter.LoadAsync();
+
+        await _presenter.CancelSelectedSaleAsync();
+
+        Assert.Equal([SalesPresenter.SaleRequiredMessage], _view.Messages);
+    }
+
+    [Fact]
+    public async Task A_sale_voided_elsewhere_shows_the_reason_and_refreshes()
+    {
+        await RegisterRiceSaleAsync(quantity: 1);
+        _view.SelectedSaleId = 1;
+        _sales.NextFailure = new BusinessRuleException("La venta #1 ya estaba anulada.");
+
+        await _presenter.CancelSelectedSaleAsync();
+
+        Assert.Equal(["La venta #1 ya estaba anulada."], _view.Errors);
+    }
+
+    private async Task RegisterRiceSaleAsync(int quantity)
+    {
+        _view.SelectedProduct = Rice;
+        _view.Quantity = quantity;
+        _presenter.AddItem();
+        _view.SelectedPaymentMethodId = 1;
+        await _presenter.RegisterAsync();
+    }
 }
