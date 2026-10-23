@@ -190,7 +190,8 @@ internal static class Ui
         string? format = null,
         bool alignRight = false,
         int minimumWidth = 70,
-        bool sortable = true)
+        bool sortable = true,
+        bool fitContent = false)
     {
         var column = new DataGridViewTextBoxColumn
         {
@@ -200,6 +201,13 @@ internal static class Ui
             MinimumWidth = minimumWidth,
             SortMode = sortable ? DataGridViewColumnSortMode.Automatic : DataGridViewColumnSortMode.NotSortable,
         };
+
+        // Short, predictable values (ids, dates, amounts, states) get exactly the width they need,
+        // so the remaining Fill columns share what is left instead of truncating them.
+        if (fitContent)
+        {
+            column.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+        }
 
         if (format is not null)
         {

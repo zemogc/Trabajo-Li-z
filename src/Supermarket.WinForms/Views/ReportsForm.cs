@@ -43,8 +43,8 @@ internal sealed class ReportsForm : Form, IReportsView
         cards.Controls.Add(Ui.Card("Unidades vendidas", _unitsSold), 3, 0);
 
         var body = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, Padding = new Padding(10, 0, 10, 10) };
-        body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
-        body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
+        body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 63));
+        body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 37));
         body.RowStyles.Add(new RowStyle(SizeType.Percent, 40));
         body.RowStyles.Add(new RowStyle(SizeType.Percent, 60));
 
@@ -164,12 +164,12 @@ internal sealed class ReportsForm : Form, IReportsView
 
     private void BuildGrids()
     {
-        _sales.Columns.Add(Ui.Column(nameof(Sale.Id), "N.º", fillWeight: 10, minimumWidth: 55));
-        _sales.Columns.Add(Ui.Column(nameof(Sale.CreatedAtLocal), "Fecha", fillWeight: 28, format: "dd/MM/yyyy HH:mm", minimumWidth: 140));
-        _sales.Columns.Add(Ui.Column(nameof(Sale.PaymentMethodName), "Pago", fillWeight: 22, minimumWidth: 90));
-        _sales.Columns.Add(Ui.Column(nameof(Sale.ItemCount), "Artículos", fillWeight: 14, format: "N0", alignRight: true, minimumWidth: 85));
-        _sales.Columns.Add(Ui.Column(nameof(Sale.Status), "Estado", fillWeight: 14, minimumWidth: 85));
-        _sales.Columns.Add(Ui.Column(nameof(Sale.Total), "Total", fillWeight: 18, format: "N2", alignRight: true, minimumWidth: 100));
+        _sales.Columns.Add(Ui.Column(nameof(Sale.Id), "N.º", minimumWidth: 40, fitContent: true));
+        _sales.Columns.Add(Ui.Column(nameof(Sale.CreatedAtLocal), "Fecha", format: "dd/MM/yyyy HH:mm", minimumWidth: 40, fitContent: true));
+        _sales.Columns.Add(Ui.Column(nameof(Sale.PaymentMethodName), "Pago", minimumWidth: 80));
+        _sales.Columns.Add(Ui.Column(nameof(Sale.ItemCount), "Artículos", format: "N0", alignRight: true, minimumWidth: 40, fitContent: true));
+        _sales.Columns.Add(Ui.Column(nameof(Sale.Status), "Estado", minimumWidth: 40, fitContent: true));
+        _sales.Columns.Add(Ui.Column(nameof(Sale.Total), "Total", format: "N2", alignRight: true, minimumWidth: 40, fitContent: true));
         _sales.CellFormatting += (_, e) =>
         {
             if (e.RowIndex >= 0 && e.CellStyle is not null
@@ -181,12 +181,12 @@ internal sealed class ReportsForm : Form, IReportsView
         };
 
         _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.PaymentMethodName), "Medio de pago", fillWeight: 45, minimumWidth: 120, sortable: false));
-        _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.SalesCount), "Ventas", fillWeight: 20, format: "N0", alignRight: true, minimumWidth: 70, sortable: false));
-        _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.Total), "Total", fillWeight: 35, format: "N2", alignRight: true, minimumWidth: 105, sortable: false));
+        _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.SalesCount), "Ventas", format: "N0", alignRight: true, minimumWidth: 40, sortable: false, fitContent: true));
+        _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.Total), "Total", format: "N2", alignRight: true, minimumWidth: 40, sortable: false, fitContent: true));
 
         _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.ProductName), "Producto", fillWeight: 50, minimumWidth: 130, sortable: false));
-        _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.Units), "Unidades", fillWeight: 20, format: "N0", alignRight: true, minimumWidth: 85, sortable: false));
-        _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.Revenue), "Ingresos", fillWeight: 30, format: "N2", alignRight: true, minimumWidth: 105, sortable: false));
+        _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.Units), "Unidades", format: "N0", alignRight: true, minimumWidth: 40, sortable: false, fitContent: true));
+        _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.Revenue), "Ingresos", format: "N2", alignRight: true, minimumWidth: 40, sortable: false, fitContent: true));
 
         foreach (var grid in new[] { _paymentMethods, _topProducts })
         {

@@ -4,6 +4,13 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
+## [1.1.1] - 2026-10-23
+
+### Corregido
+
+- Columnas que se cortaban con la fuente real de Windows: fecha, estado y total en el historial de ventas; artículos, estado y medio de pago en Reportes; unidades e ingresos en los más vendidos. Las columnas de contenido corto (número, fecha, estado, cantidades e importes) ahora se ajustan a su contenido y el texto ocupa el espacio restante.
+- El texto de ayuda de las observaciones en Entradas de mercancía no cabía en el campo.
+
 ## [1.1.0] - 2026-10-23
 
 ### Agregado
@@ -35,5 +42,6 @@ Primera versión publicada. Reemplaza por completo el proyecto universitario ori
 - 159 pruebas: unitarias, de renderizado de pantallas e integración contra SQL Server 2022 con Testcontainers.
 - `build.ps1` para verificar en local (formato, build, pruebas y cobertura) y `publish.ps1` para generar el paquete.
 
+[1.1.1]: https://github.com/zemogc/Trabajo-Li-z/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/zemogc/Trabajo-Li-z/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/zemogc/Trabajo-Li-z/releases/tag/v1.0.0
