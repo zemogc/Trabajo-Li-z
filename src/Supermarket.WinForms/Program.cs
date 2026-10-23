@@ -39,6 +39,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(DatabaseOptions.SectionName));
 builder.Services.AddSqlServerData(connectionString);
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ModuleFactory>();
 builder.Services.AddSingleton<MainForm>();
 

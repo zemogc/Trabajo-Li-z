@@ -34,6 +34,8 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
     public ISaleRepository Sales => Services.GetRequiredService<ISaleRepository>();
 
+    public IReportRepository Reports => Services.GetRequiredService<IReportRepository>();
+
     public DatabaseInitializer Initializer => Services.GetRequiredService<DatabaseInitializer>();
 
     public async Task InitializeAsync()
