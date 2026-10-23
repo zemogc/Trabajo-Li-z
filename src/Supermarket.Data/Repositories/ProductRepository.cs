@@ -8,7 +8,7 @@ namespace Supermarket.Data.Repositories;
 internal sealed class ProductRepository(IDbConnectionFactory connections) : IRepository<Product>
 {
     private const string SelectProducts = """
-        SELECT p.Id, p.Name, p.Price, p.Stock, p.CategoryId, c.Name AS CategoryName
+        SELECT p.Id, p.Name, p.Price, p.Stock, p.MinimumStock, p.CategoryId, c.Name AS CategoryName
         FROM dbo.Products AS p
         INNER JOIN dbo.Categories AS c ON c.Id = p.CategoryId
         """;
@@ -49,11 +49,11 @@ internal sealed class ProductRepository(IDbConnectionFactory connections) : IRep
             await using var connection = await connections.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
             return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
                 """
-                INSERT INTO dbo.Products (Name, Price, Stock, CategoryId)
+                INSERT INTO dbo.Products (Name, Price, Stock, MinimumStock, CategoryId)
                 OUTPUT INSERTED.Id
-                VALUES (@Name, @Price, @Stock, @CategoryId);
+                VALUES (@Name, @Price, @Stock, @MinimumStock, @CategoryId);
                 """,
-                new { entity.Name, entity.Price, entity.Stock, entity.CategoryId },
+                new { entity.Name, entity.Price, entity.Stock, entity.MinimumStock, entity.CategoryId },
                 cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
         catch (SqlException ex)
@@ -73,10 +73,10 @@ internal sealed class ProductRepository(IDbConnectionFactory connections) : IRep
             affected = await connection.ExecuteAsync(new CommandDefinition(
                 """
                 UPDATE dbo.Products
-                SET Name = @Name, Price = @Price, Stock = @Stock, CategoryId = @CategoryId
+                SET Name = @Name, Price = @Price, Stock = @Stock, MinimumStock = @MinimumStock, CategoryId = @CategoryId
                 WHERE Id = @Id;
                 """,
-                new { entity.Id, entity.Name, entity.Price, entity.Stock, entity.CategoryId },
+                new { entity.Id, entity.Name, entity.Price, entity.Stock, entity.MinimumStock, entity.CategoryId },
                 cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
         catch (SqlException ex)

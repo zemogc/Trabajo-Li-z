@@ -53,11 +53,12 @@ public class EntityValidatorTests
     [Fact]
     public void Product_reports_every_broken_rule()
     {
-        var product = new Product { Name = "", Price = 0m, Stock = -1, CategoryId = 0 };
+        var product = new Product { Name = "", Price = 0m, Stock = -1, MinimumStock = -1, CategoryId = 0 };
 
         var errors = EntityValidator.Validate(product);
 
-        Assert.Equal(4, errors.Count);
+        Assert.Equal(5, errors.Count);
+        Assert.Contains("El stock mínimo no puede ser negativo.", errors);
         Assert.Contains("Debe seleccionar una categoría.", errors);
         Assert.Contains("El precio debe ser mayor que cero.", errors);
         Assert.Contains("El stock no puede ser negativo.", errors);

@@ -21,6 +21,13 @@ internal sealed class ProductForm : CrudForm<Product>, IProductView
         TextAlign = HorizontalAlignment.Right,
     };
 
+    private readonly NumericUpDown _minimumStock = new()
+    {
+        Maximum = int.MaxValue,
+        ThousandsSeparator = true,
+        TextAlign = HorizontalAlignment.Right,
+    };
+
     private readonly ComboBox _category = new()
     {
         DropDownStyle = ComboBoxStyle.DropDownList,
@@ -31,16 +38,19 @@ internal sealed class ProductForm : CrudForm<Product>, IProductView
     public ProductForm()
         : base("Productos")
     {
-        AddColumn(nameof(Product.Id), "Código", fillWeight: 12);
-        AddColumn(nameof(Product.Name), "Nombre", fillWeight: 38);
-        AddColumn(nameof(Product.CategoryName), "Categoría", fillWeight: 22);
-        AddColumn(nameof(Product.Price), "Precio", fillWeight: 16, format: "N2", alignRight: true);
-        AddColumn(nameof(Product.Stock), "Stock", fillWeight: 12, format: "N0", alignRight: true);
+        AddColumn(nameof(Product.Id), "Código", fillWeight: 10, minimumWidth: 90);
+        AddColumn(nameof(Product.Name), "Nombre", fillWeight: 34, minimumWidth: 140);
+        AddColumn(nameof(Product.CategoryName), "Categoría", fillWeight: 20, minimumWidth: 90);
+        AddColumn(nameof(Product.Price), "Precio", fillWeight: 14, format: "N2", alignRight: true, minimumWidth: 100);
+        AddColumn(nameof(Product.Stock), "Stock", fillWeight: 10, format: "N0", alignRight: true, minimumWidth: 80);
+        AddColumn(nameof(Product.MinimumStock), "Mínimo", fillWeight: 10, format: "N0", alignRight: true, minimumWidth: 90);
+        HighlightRowsWhen(product => product.IsLowStock);
 
         AddField("Nombre", _name);
         AddField("Categoría", _category);
         AddField("Precio", _price);
         AddField("Stock", _stock);
+        AddField("Stock mínimo (alerta de reposición)", _minimumStock);
     }
 
     public void DisplayCategories(IReadOnlyList<Category> categories)
@@ -51,11 +61,19 @@ internal sealed class ProductForm : CrudForm<Product>, IProductView
         _category.SelectedValue = selected ?? -1;
     }
 
+    protected override string DescribeEntities(IReadOnlyList<Product> entities)
+    {
+        var description = base.DescribeEntities(entities);
+        var lowStock = entities.Count(p => p.IsLowStock);
+        return lowStock == 0 ? description : $"{description} · {lowStock} con stock bajo";
+    }
+
     protected override void FillEditor(Product entity)
     {
         _name.Text = entity.Name;
         _price.Value = Math.Clamp(entity.Price, _price.Minimum, _price.Maximum);
         _stock.Value = Math.Clamp(entity.Stock, _stock.Minimum, _stock.Maximum);
+        _minimumStock.Value = Math.Clamp(entity.MinimumStock, _minimumStock.Minimum, _minimumStock.Maximum);
 
         if (entity.IsNew)
         {
@@ -72,6 +90,7 @@ internal sealed class ProductForm : CrudForm<Product>, IProductView
         Name = _name.Text,
         Price = _price.Value,
         Stock = (int)_stock.Value,
+        MinimumStock = (int)_minimumStock.Value,
         CategoryId = _category.SelectedValue is int id ? id : 0,
     };
 }

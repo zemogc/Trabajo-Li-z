@@ -31,14 +31,14 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Products)
 BEGIN
-    INSERT INTO dbo.Products (Name, Price, Stock, CategoryId)
-    SELECT seed.Name, seed.Price, seed.Stock, c.Id
-    FROM (VALUES (N'Leche entera 1 L', 4200.00, 48, N'Lácteos'),
-                 (N'Queso campesino 500 g', 11500.00, 20, N'Lácteos'),
-                 (N'Arroz 1 kg', 4800.00, 60, N'Granos'),
-                 (N'Lenteja 500 g', 3900.00, 35, N'Granos'),
-                 (N'Agua sin gas 600 ml', 1800.00, 120, N'Bebidas'),
-                 (N'Jabón de loza 500 g', 5600.00, 25, N'Aseo')) AS seed (Name, Price, Stock, CategoryName)
+    INSERT INTO dbo.Products (Name, Price, Stock, MinimumStock, CategoryId)
+    SELECT seed.Name, seed.Price, seed.Stock, seed.MinimumStock, c.Id
+    FROM (VALUES (N'Leche entera 1 L', 4200.00, 48, 20, N'Lácteos'),
+                 (N'Queso campesino 500 g', 11500.00, 6, 8, N'Lácteos'),
+                 (N'Arroz 1 kg', 4800.00, 60, 25, N'Granos'),
+                 (N'Lenteja 500 g', 3900.00, 35, 10, N'Granos'),
+                 (N'Agua sin gas 600 ml', 1800.00, 120, 40, N'Bebidas'),
+                 (N'Jabón de loza 500 g', 5600.00, 4, 5, N'Aseo')) AS seed (Name, Price, Stock, MinimumStock, CategoryName)
     INNER JOIN dbo.Categories AS c ON c.Name = seed.CategoryName;
 END;
 GO

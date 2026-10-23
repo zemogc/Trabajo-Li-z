@@ -9,13 +9,14 @@ public class ProductRepositoryTests(SqlServerFixture database) : DatabaseTest(da
     public async Task Products_are_returned_with_their_category_name()
     {
         var dairy = await Database.Categories.AddAsync(new Category { Name = "Lácteos" });
-        var id = await Database.Products.AddAsync(new Product { Name = "Leche 1 L", Price = 4200.50m, Stock = 48, CategoryId = dairy });
+        var id = await Database.Products.AddAsync(new Product { Name = "Leche 1 L", Price = 4200.50m, Stock = 48, MinimumStock = 12, CategoryId = dairy });
 
         var product = Assert.Single(await Database.Products.GetAllAsync());
 
         Assert.Equal(id, product.Id);
         Assert.Equal(4200.50m, product.Price);
         Assert.Equal(48, product.Stock);
+        Assert.Equal(12, product.MinimumStock);
         Assert.Equal(dairy, product.CategoryId);
         Assert.Equal("Lácteos", product.CategoryName);
     }
@@ -27,12 +28,13 @@ public class ProductRepositoryTests(SqlServerFixture database) : DatabaseTest(da
         var drinks = await Database.Categories.AddAsync(new Category { Name = "Bebidas" });
         var id = await Database.Products.AddAsync(new Product { Name = "Kumis", Price = 3000m, Stock = 5, CategoryId = dairy });
 
-        await Database.Products.UpdateAsync(new Product { Id = id, Name = "Kumis 1 L", Price = 6500m, Stock = 12, CategoryId = drinks });
+        await Database.Products.UpdateAsync(new Product { Id = id, Name = "Kumis 1 L", Price = 6500m, Stock = 12, MinimumStock = 3, CategoryId = drinks });
 
         var product = Assert.Single(await Database.Products.GetAllAsync());
         Assert.Equal("Kumis 1 L", product.Name);
         Assert.Equal(6500m, product.Price);
         Assert.Equal(12, product.Stock);
+        Assert.Equal(3, product.MinimumStock);
         Assert.Equal("Bebidas", product.CategoryName);
     }
 
@@ -63,6 +65,8 @@ public class ProductRepositoryTests(SqlServerFixture database) : DatabaseTest(da
             Database.Products.AddAsync(new Product { Name = "Gratis", Price = 0m, Stock = 1, CategoryId = category }));
         await Assert.ThrowsAsync<DataConflictException>(() =>
             Database.Products.AddAsync(new Product { Name = "Negativo", Price = 1m, Stock = -1, CategoryId = category }));
+        await Assert.ThrowsAsync<DataConflictException>(() =>
+            Database.Products.AddAsync(new Product { Name = "Mínimo negativo", Price = 1m, Stock = 1, MinimumStock = -1, CategoryId = category }));
     }
 
     [Fact]

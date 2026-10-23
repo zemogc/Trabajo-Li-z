@@ -18,7 +18,7 @@ internal sealed class CatalogForm<TItem> : CrudForm<TItem>
     public CatalogForm(string title)
         : base(title)
     {
-        AddColumn(nameof(CatalogItem.Id), "Código", fillWeight: 15);
+        AddColumn(nameof(CatalogItem.Id), "Código", fillWeight: 15, minimumWidth: 90);
         AddColumn(nameof(CatalogItem.Name), "Nombre", fillWeight: 35);
         AddColumn(nameof(CatalogItem.Observation), "Observación", fillWeight: 50);
 

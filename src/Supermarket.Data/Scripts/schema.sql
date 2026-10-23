@@ -41,10 +41,22 @@ BEGIN
         Name       NVARCHAR(100)      NOT NULL CONSTRAINT UQ_Products_Name UNIQUE,
         Price      DECIMAL(18, 2)     NOT NULL CONSTRAINT CK_Products_Price CHECK (Price > 0),
         Stock      INT                NOT NULL CONSTRAINT CK_Products_Stock CHECK (Stock >= 0),
+        MinimumStock INT              NOT NULL CONSTRAINT DF_Products_MinimumStock DEFAULT (5)
+                                               CONSTRAINT CK_Products_MinimumStock CHECK (MinimumStock >= 0),
         CategoryId INT                NOT NULL
             CONSTRAINT FK_Products_Categories REFERENCES dbo.Categories (Id)
     );
 
     CREATE INDEX IX_Products_CategoryId ON dbo.Products (CategoryId);
+END;
+GO
+
+-- v2: reorder level per product. Upgrades databases created before the column existed.
+IF COL_LENGTH(N'dbo.Products', N'MinimumStock') IS NULL
+BEGIN
+    ALTER TABLE dbo.Products
+        ADD MinimumStock INT NOT NULL
+            CONSTRAINT DF_Products_MinimumStock DEFAULT (5)
+            CONSTRAINT CK_Products_MinimumStock CHECK (MinimumStock >= 0);
 END;
 GO
