@@ -9,7 +9,7 @@ namespace Supermarket.Core.Presentation;
 /// The view only raises user intents and renders what the presenter tells it to. It must not
 /// talk to repositories or contain business rules, which keeps presenters testable without a UI.
 /// </remarks>
-public interface ICrudView<TEntity>
+public interface ICrudView<TEntity> : IOperationView
     where TEntity : class, IEntity
 {
     /// <summary>Raised when the screen becomes visible and its data should be (re)loaded.</summary>
@@ -40,12 +40,4 @@ public interface ICrudView<TEntity>
     TEntity ReadEditor();
 
     void CloseEditor();
-
-    void SetBusy(bool isBusy);
-
-    void ShowMessage(string message);
-
-    void ShowErrors(IReadOnlyList<string> errors);
-
-    bool Confirm(string question);
 }
