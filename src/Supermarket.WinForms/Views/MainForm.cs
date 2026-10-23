@@ -51,6 +51,16 @@ internal sealed class MainForm : Form
         exit.Dock = DockStyle.Bottom;
         exit.Click += (_, _) => Close();
 
+        var version = new Label
+        {
+            Text = $"Versión {DisplayVersion}",
+            Dock = DockStyle.Bottom,
+            Height = 28,
+            ForeColor = Theme.MutedText,
+            Padding = new Padding(20, 0, 0, 0),
+            TextAlign = ContentAlignment.MiddleLeft,
+        };
+
         var brand = new Label
         {
             Text = "Supermercado",
@@ -63,10 +73,14 @@ internal sealed class MainForm : Form
         };
 
         sidebar.Controls.Add(menu);
+        sidebar.Controls.Add(version);
         sidebar.Controls.Add(exit);
         sidebar.Controls.Add(brand);
         return sidebar;
     }
+
+    /// <summary>Product version without the source revision suffix ("1.0.0+abc123" becomes "1.0.0").</summary>
+    private static string DisplayVersion => Application.ProductVersion.Split('+')[0];
 
     private static Button CreateMenuButton(string text, char glyph)
     {

@@ -1,5 +1,9 @@
 # Supermarket
 
+[![Release](https://img.shields.io/github/v/release/zemogc/Trabajo-Li-z?label=versi%C3%B3n)](https://github.com/zemogc/Trabajo-Li-z/releases/latest)
+[![.NET](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/)
+[![Pruebas](https://img.shields.io/badge/pruebas-159-2ea44f)](#pruebas)
+
 Aplicación de escritorio para operar un supermercado: registro de ventas con control de inventario, y administración de productos, categorías, proveedores y medios de pago.
 
 Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el patrón **Model-View-Presenter (Passive View)**.
@@ -10,6 +14,7 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 
 - **Inicio:** ventas, ingresos y ticket promedio del día; productos más vendidos de los últimos 30 días; ventas del día por medio de pago, y productos que hay que reponer, ordenados por urgencia.
 - **Ventas:** carrito con validación de stock, medio de pago y total. Al registrar, la venta se guarda en una transacción y el stock se descuenta de forma atómica. Incluye el historial de ventas recientes con el detalle de cada una.
+- **Entradas de mercancía:** registro de lo recibido de cada proveedor, con costo unitario y observaciones. El stock se suma en la misma transacción.
 - **Anulación de ventas:** devuelve las unidades al inventario. La venta queda en el historial marcada como anulada y no cuenta en los reportes.
 - CRUD completo de productos, categorías, proveedores y medios de pago.
 - Búsqueda por código o por nombre parcial. En productos también busca por categoría y por proveedor.
@@ -69,7 +74,15 @@ flowchart LR
 - **Async de punta a punta**, con protección contra dobles clics mientras hay una operación en curso.
 - **Calidad en la compilación:** `TreatWarningsAsErrors`, analizadores .NET (`latest-recommended`), estilo de código verificado en el build, gestión central de paquetes y auditoría de vulnerabilidades de NuGet.
 
-## Requisitos
+## Descarga
+
+En [Releases](https://github.com/zemogc/Trabajo-Li-z/releases/latest) está el paquete `Supermarket-vX.Y.Z-win-x64.zip`. Es un único ejecutable para Windows x64 que no requiere instalar .NET.
+
+1. Descomprime el zip en una carpeta.
+2. Revisa la cadena de conexión en `appsettings.json`. Por defecto usa SQL Server LocalDB, que viene con Visual Studio y SQL Server Express.
+3. Ejecuta `Supermarket.exe`. La primera vez crea la base de datos y carga datos de ejemplo.
+
+## Requisitos para desarrollar
 
 - Windows 10 u 11
 - [.NET SDK 10](https://dotnet.microsoft.com/download/dotnet/10.0)
@@ -114,7 +127,15 @@ Crea `src/Supermarket.WinForms/appsettings.Local.json`. Git lo ignora, así que 
 ./build.ps1 -SkipIntegration   # sin Docker
 ```
 
-Si Docker no está corriendo, el script omite las pruebas de integración y lo indica. El reporte de cobertura queda en `artifacts/coverage/index.html`.
+Si Docker no está corriendo, el script omite las pruebas de integración y lo indica.
+
+Para generar el paquete de distribución:
+
+```powershell
+./publish.ps1   # artifacts/Supermarket-v<versión>-win-x64.zip
+```
+
+El script publica un ejecutable autocontenido y comprimido, y nunca incluye `appsettings.Local.json`. El reporte de cobertura queda en `artifacts/coverage/index.html`.
 
 ## Pruebas
 
@@ -133,9 +154,9 @@ Cobertura de líneas medida con `build.ps1`:
 
 | Capa | Cobertura |
 | --- | --- |
-| `Supermarket.Core` | 96 % |
+| `Supermarket.Core` | 95 % |
 | `Supermarket.Data` | 97 % |
-| `Supermarket.WinForms` | 68 % |
+| `Supermarket.WinForms` | 70 % |
 
 La lógica vive en `Core` y `Data`, que están cubiertos casi por completo. En la capa WinForms, además de probar sus componentes no visuales, hay pruebas de humo que construyen cada pantalla fuera de pantalla, le pasan datos por su interfaz de vista y la dibujan a una imagen, sin abrir ninguna ventana. Las rutas de arranque y los diálogos se prueban manualmente.
 
@@ -153,6 +174,8 @@ Las pruebas de integración usan [Testcontainers](https://dotnet.testcontainers.
 │   ├── Supermarket.WinForms.Tests             # Ordenamiento, CSV y renderizado de pantallas
 │   └── Supermarket.Data.IntegrationTests      # xUnit + Testcontainers
 ├── build.ps1                     # Verificación local: formato, build y pruebas
+├── publish.ps1                   # Paquete autocontenido para Windows
+├── CHANGELOG.md                  # Historial de versiones
 ├── Directory.Build.props         # Configuración común de compilación y análisis
 ├── Directory.Packages.props      # Versiones centralizadas de NuGet
 └── docker-compose.yml            # SQL Server local para desarrollo
