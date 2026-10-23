@@ -8,9 +8,12 @@ namespace Supermarket.Data.Repositories;
 internal sealed class ProductRepository(IDbConnectionFactory connections) : IRepository<Product>
 {
     private const string SelectProducts = """
-        SELECT p.Id, p.Name, p.Price, p.Stock, p.MinimumStock, p.CategoryId, c.Name AS CategoryName
+        SELECT p.Id, p.Name, p.Price, p.Stock, p.MinimumStock,
+               p.CategoryId, c.Name AS CategoryName,
+               p.ProviderId, pr.Name AS ProviderName
         FROM dbo.Products AS p
         INNER JOIN dbo.Categories AS c ON c.Id = p.CategoryId
+        LEFT JOIN dbo.Providers AS pr ON pr.Id = p.ProviderId
         """;
 
     public async Task<IReadOnlyList<Product>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -31,7 +34,7 @@ internal sealed class ProductRepository(IDbConnectionFactory connections) : IRep
         var products = await connection.QueryAsync<Product>(new CommandDefinition(
             $"""
             {SelectProducts}
-            WHERE p.Id = @Id OR p.Name LIKE @Pattern OR c.Name LIKE @Pattern
+            WHERE p.Id = @Id OR p.Name LIKE @Pattern OR c.Name LIKE @Pattern OR pr.Name LIKE @Pattern
             ORDER BY p.Name;
             """,
             new { search.Id, search.Pattern },
@@ -49,11 +52,11 @@ internal sealed class ProductRepository(IDbConnectionFactory connections) : IRep
             await using var connection = await connections.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
             return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
                 """
-                INSERT INTO dbo.Products (Name, Price, Stock, MinimumStock, CategoryId)
+                INSERT INTO dbo.Products (Name, Price, Stock, MinimumStock, CategoryId, ProviderId)
                 OUTPUT INSERTED.Id
-                VALUES (@Name, @Price, @Stock, @MinimumStock, @CategoryId);
+                VALUES (@Name, @Price, @Stock, @MinimumStock, @CategoryId, @ProviderId);
                 """,
-                new { entity.Name, entity.Price, entity.Stock, entity.MinimumStock, entity.CategoryId },
+                new { entity.Name, entity.Price, entity.Stock, entity.MinimumStock, entity.CategoryId, entity.ProviderId },
                 cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
         catch (SqlException ex)
@@ -73,10 +76,11 @@ internal sealed class ProductRepository(IDbConnectionFactory connections) : IRep
             affected = await connection.ExecuteAsync(new CommandDefinition(
                 """
                 UPDATE dbo.Products
-                SET Name = @Name, Price = @Price, Stock = @Stock, MinimumStock = @MinimumStock, CategoryId = @CategoryId
+                SET Name = @Name, Price = @Price, Stock = @Stock, MinimumStock = @MinimumStock,
+                    CategoryId = @CategoryId, ProviderId = @ProviderId
                 WHERE Id = @Id;
                 """,
-                new { entity.Id, entity.Name, entity.Price, entity.Stock, entity.MinimumStock, entity.CategoryId },
+                new { entity.Id, entity.Name, entity.Price, entity.Stock, entity.MinimumStock, entity.CategoryId, entity.ProviderId },
                 cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
         catch (SqlException ex)

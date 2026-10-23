@@ -11,18 +11,22 @@ public class ProductPresenterTests
     private readonly InMemoryRepository<Category> _categories = new InMemoryRepository<Category>()
         .With(new Category { Name = "Granos" });
 
+    private readonly InMemoryRepository<Provider> _providers = new InMemoryRepository<Provider>()
+        .With(new Provider { Name = "Distribuidora del Valle" });
+
     private readonly InMemoryRepository<Product> _products = new();
     private readonly ProductPresenter _presenter;
 
     public ProductPresenterTests() =>
-        _presenter = new ProductPresenter(_view, _products, _categories, NullLogger<ProductPresenter>.Instance);
+        _presenter = new ProductPresenter(_view, _products, _categories, _providers, NullLogger<ProductPresenter>.Instance);
 
     [Fact]
-    public async Task Load_fills_the_category_selector_before_listing_products()
+    public async Task Load_fills_the_lookups_before_listing_products()
     {
         await _presenter.LoadAsync();
 
         Assert.Equal("Granos", Assert.Single(_view.Categories).Name);
+        Assert.Equal("Distribuidora del Valle", Assert.Single(_view.Providers).Name);
         Assert.Empty(_view.Displayed);
     }
 
@@ -61,5 +65,28 @@ public class ProductPresenterTests
         Assert.Equal("Lentejas", product.Name);
         Assert.Equal(4500m, product.Price);
         Assert.Single(_view.Displayed);
+    }
+
+    [Fact]
+    public async Task Provider_is_optional()
+    {
+        _presenter.BeginCreate();
+        _view.EditorInput = new Product { Name = "Sal 1 kg", Price = 1500m, Stock = 3, CategoryId = 1, ProviderId = null };
+
+        await _presenter.SaveAsync();
+
+        Assert.Empty(_view.Errors);
+        Assert.Null(Assert.Single(_products.Items).ProviderId);
+    }
+
+    [Fact]
+    public async Task Invalid_provider_id_is_rejected()
+    {
+        _presenter.BeginCreate();
+        _view.EditorInput = new Product { Name = "Sal 1 kg", Price = 1500m, Stock = 3, CategoryId = 1, ProviderId = 0 };
+
+        await _presenter.SaveAsync();
+
+        Assert.Equal(["El proveedor seleccionado no es válido."], _view.Errors);
     }
 }

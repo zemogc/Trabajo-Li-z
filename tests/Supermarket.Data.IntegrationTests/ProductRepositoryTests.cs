@@ -72,4 +72,44 @@ public class ProductRepositoryTests(SqlServerFixture database) : DatabaseTest(da
     [Fact]
     public async Task Deleting_a_missing_product_throws_not_found() =>
         await Assert.ThrowsAsync<EntityNotFoundException>(() => Database.Products.DeleteAsync(4242));
+
+    [Fact]
+    public async Task Provider_is_optional_and_returned_by_name()
+    {
+        var grains = await Database.Categories.AddAsync(new Category { Name = "Granos" });
+        var valle = await Database.Providers.AddAsync(new Provider { Name = "Distribuidora del Valle" });
+        await Database.Products.AddAsync(new Product { Name = "Arroz", Price = 4800m, Stock = 10, CategoryId = grains, ProviderId = valle });
+        await Database.Products.AddAsync(new Product { Name = "Sal", Price = 1500m, Stock = 10, CategoryId = grains });
+
+        var products = await Database.Products.GetAllAsync();
+
+        Assert.Equal("Distribuidora del Valle", products.Single(p => p.Name == "Arroz").ProviderName);
+        Assert.Null(products.Single(p => p.Name == "Sal").ProviderId);
+        Assert.Equal("Arroz", Assert.Single(await Database.Products.SearchAsync("valle")).Name);
+    }
+
+    [Fact]
+    public async Task Providers_in_use_cannot_be_deleted()
+    {
+        var grains = await Database.Categories.AddAsync(new Category { Name = "Granos" });
+        var valle = await Database.Providers.AddAsync(new Provider { Name = "Distribuidora del Valle" });
+        await Database.Products.AddAsync(new Product { Name = "Arroz", Price = 4800m, Stock = 10, CategoryId = grains, ProviderId = valle });
+
+        await Assert.ThrowsAsync<DataConflictException>(() => Database.Providers.DeleteAsync(valle));
+    }
+
+    [Fact]
+    public async Task Removing_the_provider_from_a_product_releases_it()
+    {
+        var grains = await Database.Categories.AddAsync(new Category { Name = "Granos" });
+        var valle = await Database.Providers.AddAsync(new Provider { Name = "Distribuidora del Valle" });
+        var id = await Database.Products.AddAsync(new Product { Name = "Arroz", Price = 4800m, Stock = 10, CategoryId = grains, ProviderId = valle });
+
+        await Database.Products.UpdateAsync(new Product { Id = id, Name = "Arroz", Price = 4800m, Stock = 10, CategoryId = grains, ProviderId = null });
+
+        var product = Assert.Single(await Database.Products.GetAllAsync());
+        Assert.Null(product.ProviderId);
+        Assert.Null(product.ProviderName);
+        await Database.Providers.DeleteAsync(valle);
+    }
 }

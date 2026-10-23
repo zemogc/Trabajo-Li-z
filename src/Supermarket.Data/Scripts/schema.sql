@@ -60,3 +60,18 @@ BEGIN
             CONSTRAINT CK_Products_MinimumStock CHECK (MinimumStock >= 0);
 END;
 GO
+
+-- v3: optional usual provider per product.
+IF COL_LENGTH(N'dbo.Products', N'ProviderId') IS NULL
+BEGIN
+    ALTER TABLE dbo.Products
+        ADD ProviderId INT NULL
+            CONSTRAINT FK_Products_Providers REFERENCES dbo.Providers (Id);
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Products_ProviderId' AND object_id = OBJECT_ID(N'dbo.Products'))
+BEGIN
+    CREATE INDEX IX_Products_ProviderId ON dbo.Products (ProviderId);
+END;
+GO

@@ -18,7 +18,7 @@ internal sealed class MainForm : Form
 
         Text = "Supermercado";
         MinimumSize = new Size(1100, 640);
-        Size = new Size(1320, 760);
+        Size = new Size(1400, 780);
         StartPosition = FormStartPosition.CenterScreen;
 
         Controls.Add(_content);
