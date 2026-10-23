@@ -8,14 +8,12 @@ namespace Supermarket.Core.Presentation;
 /// <summary>
 /// Coordinates an <see cref="ICrudView{TEntity}"/> with its <see cref="IRepository{TEntity}"/>.
 /// </summary>
-public partial class CrudPresenter<TEntity>
+public partial class CrudPresenter<TEntity> : PresenterBase
     where TEntity : class, IEntity, new()
 {
     internal const string SelectionRequiredMessage = "Seleccione un registro de la lista.";
     internal const string SavedMessage = "Registro guardado correctamente.";
     internal const string DeletedMessage = "Registro eliminado correctamente.";
-    internal const string NotFoundMessage = "El registro ya no existe; es posible que otro usuario lo haya eliminado. La lista se actualizó.";
-    internal const string UnexpectedErrorMessage = "Ocurrió un error inesperado. Revise la conexión con la base de datos e intente de nuevo.";
 
     internal static string NoResultsMessage(string term) => $"No se encontraron resultados para \"{term}\".";
 
@@ -23,13 +21,11 @@ public partial class CrudPresenter<TEntity>
     private readonly IRepository<TEntity> _repository;
     private readonly ILogger _logger;
     private TEntity? _editing;
-    private bool _isBusy;
 
     public CrudPresenter(ICrudView<TEntity> view, IRepository<TEntity> repository, ILogger logger)
+        : base(view, logger)
     {
-        ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(logger);
 
         _view = view;
         _repository = repository;
@@ -49,13 +45,13 @@ public partial class CrudPresenter<TEntity>
     /// <summary>The entity currently open in the editor, or <see langword="null"/> when no edit is in progress.</summary>
     public TEntity? Editing => _editing;
 
-    public Task LoadAsync() => RunAsync(async () =>
+    public Task LoadAsync() => RunCrudAsync(async () =>
     {
         await OnLoadingAsync();
         await RefreshAsync();
     });
 
-    public Task SearchAsync() => RunAsync(async () =>
+    public Task SearchAsync() => RunCrudAsync(async () =>
     {
         var found = await RefreshAsync();
         var term = _view.SearchTerm.Trim();
@@ -108,7 +104,7 @@ public partial class CrudPresenter<TEntity>
             return Task.CompletedTask;
         }
 
-        return RunAsync(async () =>
+        return RunCrudAsync(async () =>
         {
             if (entity.IsNew)
             {
@@ -142,7 +138,7 @@ public partial class CrudPresenter<TEntity>
             return Task.CompletedTask;
         }
 
-        return RunAsync(async () =>
+        return RunCrudAsync(async () =>
         {
             await _repository.DeleteAsync(selected.Id);
             LogDeleted(typeof(TEntity).Name, selected.Id);
@@ -156,6 +152,8 @@ public partial class CrudPresenter<TEntity>
             _view.ShowMessage(DeletedMessage);
         });
     }
+
+    protected override string Subject => typeof(TEntity).Name;
 
     /// <summary>Loads any additional data the screen needs, such as lookup lists.</summary>
     protected virtual Task OnLoadingAsync() => Task.CompletedTask;
@@ -179,54 +177,12 @@ public partial class CrudPresenter<TEntity>
         return entities.Count;
     }
 
-    private async Task RunAsync(Func<Task> operation)
+    // A record deleted by someone else closes the editor and refreshes the list.
+    private Task RunCrudAsync(Func<Task> operation) => RunAsync(operation, async () =>
     {
-        // Ignore double clicks and repeated events while a database call is still running.
-        if (_isBusy)
-        {
-            return;
-        }
-
-        _isBusy = true;
-        _view.SetBusy(true);
-        try
-        {
-            await operation();
-        }
-        catch (DataConflictException ex)
-        {
-            _view.ShowErrors([ex.Message]);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            LogNotFound(ex);
-            CancelEdit();
-            _view.ShowErrors([NotFoundMessage]);
-            await TryRefreshAsync();
-        }
-        catch (Exception ex)
-        {
-            LogUnexpectedError(ex, typeof(TEntity).Name);
-            _view.ShowErrors([UnexpectedErrorMessage]);
-        }
-        finally
-        {
-            _isBusy = false;
-            _view.SetBusy(false);
-        }
-    }
-
-    private async Task TryRefreshAsync()
-    {
-        try
-        {
-            await RefreshAsync();
-        }
-        catch (Exception ex)
-        {
-            LogUnexpectedError(ex, typeof(TEntity).Name);
-        }
-    }
+        CancelEdit();
+        await RefreshAsync();
+    });
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{EntityType} {Id} created")]
     private partial void LogCreated(string entityType, int id);
@@ -236,10 +192,4 @@ public partial class CrudPresenter<TEntity>
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{EntityType} {Id} deleted")]
     private partial void LogDeleted(string entityType, int id);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Concurrent change detected")]
-    private partial void LogNotFound(Exception exception);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Unexpected error while working with {EntityType}")]
-    private partial void LogUnexpectedError(Exception exception, string entityType);
 }
