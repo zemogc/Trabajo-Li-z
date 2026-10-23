@@ -8,7 +8,9 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 
 ## Funcionalidades
 
+- **Inicio:** ventas, ingresos y ticket promedio del día; productos más vendidos de los últimos 30 días; ventas del día por medio de pago, y productos que hay que reponer, ordenados por urgencia.
 - **Ventas:** carrito con validación de stock, medio de pago y total. Al registrar, la venta se guarda en una transacción y el stock se descuenta de forma atómica. Incluye el historial de ventas recientes con el detalle de cada una.
+- **Anulación de ventas:** devuelve las unidades al inventario. La venta queda en el historial marcada como anulada y no cuenta en los reportes.
 - CRUD completo de productos, categorías, proveedores y medios de pago.
 - Búsqueda por código o por nombre parcial. En productos también busca por categoría y por proveedor.
 - Cada producto puede tener un proveedor habitual. Un proveedor o una categoría en uso no se puede eliminar.
@@ -58,10 +60,12 @@ flowchart LR
 - **Presentadores sin UI.** Las vistas implementan `ICrudView<T>`, solo exponen eventos y métodos de renderizado, y no contienen lógica. Esto permite probar todo el flujo (cargar, buscar, crear, editar, eliminar y manejar errores) con dobles de prueba.
 - **Un presentador genérico.** `CrudPresenter<T>` implementa el flujo una sola vez. `CatalogPresenter<T>` y `ProductPresenter` solo agregan lo que es propio de cada uno, en lugar de duplicar cuatro presentadores casi idénticos. `PresenterBase` centraliza el estado de "ocupado" y el manejo de errores que comparten el CRUD y las ventas.
 - **Ventas sin sobreventa.** El stock se descuenta con un `UPDATE ... WHERE Stock >= @Quantity` dentro de una transacción. Si un producto no alcanza, se revierte toda la venta. Una prueba de integración lanza cinco ventas simultáneas por la última unidad y verifica que solo una se registre. Los productos se bloquean siempre en el mismo orden para evitar deadlocks.
+- **Anulación idempotente.** Marcar la venta (`UPDATE ... WHERE CancelledAt IS NULL`) y devolver el stock ocurren en la misma transacción. Si dos cajas anulan la misma venta a la vez, solo una devuelve el stock; hay una prueba de integración con cinco anulaciones simultáneas.
+- **Fechas correctas por zona horaria.** Las ventas se guardan en UTC y "hoy" se calcula según la zona horaria local con un `TimeProvider` inyectado. Así los reportes del día se prueban con un reloj fijo en lugar de depender de la hora real.
 - **El precio lo pone el servidor.** El cliente solo envía producto y cantidad. El precio unitario se toma de la base al momento de vender y queda guardado en la línea, así que un cambio de precio posterior no altera las ventas pasadas.
 - **Excepciones de dominio.** Los repositorios convierten los errores 547, 2601 y 2627 de SQL Server en `DataConflictException`, y las filas afectadas = 0 en `EntityNotFoundException`. Los presentadores nunca dependen del proveedor de base de datos.
 - **SQL seguro.** Todos los valores viajan como parámetros. Los comodines de `LIKE` (`%`, `_`, `[`) se escapan para que buscar "50%" encuentre exactamente eso.
-- **Esquema versionado.** Los scripts `schema.sql` y `seed.sql` son idempotentes, van embebidos en el ensamblado y son los mismos que usan la aplicación y las pruebas de integración. Los cambios de esquema se agregan como pasos que actualizan bases existentes (`MinimumStock`, `ProviderId`, tablas de ventas), y una prueba de integración parte de una base con el esquema original y verifica la actualización.
+- **Esquema versionado.** Los scripts `schema.sql` y `seed.sql` son idempotentes, van embebidos en el ensamblado y son los mismos que usan la aplicación y las pruebas de integración. Los cambios de esquema se agregan como pasos que actualizan bases existentes (`MinimumStock`, `ProviderId`, tablas de ventas, `CancelledAt`), y una prueba de integración parte de una base con el esquema original y verifica la actualización.
 - **Async de punta a punta**, con protección contra dobles clics mientras hay una operación en curso.
 - **Calidad en la compilación:** `TreatWarningsAsErrors`, analizadores .NET (`latest-recommended`), estilo de código verificado en el build, gestión central de paquetes y auditoría de vulnerabilidades de NuGet.
 
@@ -129,9 +133,9 @@ Cobertura de líneas medida con `build.ps1`:
 
 | Capa | Cobertura |
 | --- | --- |
-| `Supermarket.Core` | 94 % |
-| `Supermarket.Data` | 96 % |
-| `Supermarket.WinForms` | 65 % |
+| `Supermarket.Core` | 96 % |
+| `Supermarket.Data` | 97 % |
+| `Supermarket.WinForms` | 68 % |
 
 La lógica vive en `Core` y `Data`, que están cubiertos casi por completo. En la capa WinForms, además de probar sus componentes no visuales, hay pruebas de humo que construyen cada pantalla fuera de pantalla, le pasan datos por su interfaz de vista y la dibujan a una imagen, sin abrir ninguna ventana. Las rutas de arranque y los diálogos se prueban manualmente.
 
