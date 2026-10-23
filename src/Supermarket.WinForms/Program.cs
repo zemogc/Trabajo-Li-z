@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Supermarket.Data;
 using Supermarket.WinForms;
 using Supermarket.WinForms.Infrastructure;
+using Supermarket.WinForms.Infrastructure.Logging;
 using Supermarket.WinForms.Views;
 
 ApplicationConfiguration.Initialize();
@@ -37,6 +38,12 @@ if (string.IsNullOrWhiteSpace(connectionString))
     return 1;
 }
 
+// Daily log files make support possible: users can send a file instead of describing a problem.
+var logDirectory = builder.Configuration["Logging:File:Path"] is { Length: > 0 } configured
+    ? Environment.ExpandEnvironmentVariables(configured)
+    : FileLoggerProvider.DefaultDirectory;
+builder.Logging.AddProvider(new FileLoggerProvider(logDirectory, TimeProvider.System));
+
 builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(DatabaseOptions.SectionName));
 builder.Services.AddSqlServerData(connectionString);
 builder.Services.AddSingleton(TimeProvider.System);
@@ -52,7 +59,7 @@ Application.ThreadException += (_, e) =>
 {
     logger.UnhandledUiException(e.Exception);
     MessageBox.Show(
-        "Ocurrió un error inesperado. Los detalles se registraron en el log de la aplicación.",
+        $"Ocurrió un error inesperado. Los detalles se registraron en:{Environment.NewLine}{logDirectory}",
         "Error",
         MessageBoxButtons.OK,
         MessageBoxIcon.Error);
@@ -78,7 +85,8 @@ if (options.InitializeOnStartup)
             "Error de conexión",
             $"No fue posible conectarse a la base de datos.{Environment.NewLine}{Environment.NewLine}" +
             $"Verifique que SQL Server esté en ejecución y que la cadena de conexión de appsettings.json sea correcta." +
-            $"{Environment.NewLine}{Environment.NewLine}Detalle: {ex.Message}");
+            $"{Environment.NewLine}{Environment.NewLine}Detalle: {ex.Message}" +
+            $"{Environment.NewLine}{Environment.NewLine}Registro: {logDirectory}");
         return 1;
     }
 }
