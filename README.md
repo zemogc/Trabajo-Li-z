@@ -86,6 +86,8 @@ Al iniciar, la aplicación crea la base de datos `Supermarket`, aplica el esquem
 docker compose up -d --wait
 ```
 
+El contenedor solo escucha en `127.0.0.1`. La contraseña de `sa` es una contraseña de desarrollo; para usar otra, define la variable `MSSQL_SA_PASSWORD` (o un archivo `.env`, que Git ignora) antes de levantarlo.
+
 Crea `src/Supermarket.WinForms/appsettings.Local.json`. Git lo ignora, así que no se sube al repositorio.
 
 ```json
