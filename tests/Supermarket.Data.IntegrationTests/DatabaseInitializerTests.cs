@@ -23,6 +23,10 @@ public class DatabaseInitializerTests(SqlServerFixture database) : DatabaseTest(
         Assert.All(products, p => Assert.False(string.IsNullOrEmpty(p.CategoryName)));
         Assert.Equal(2, products.Count(p => p.IsLowStock));
         Assert.Equal(5, products.Count(p => p.ProviderName is not null));
+
+        var sales = await Database.Sales.GetRecentAsync(10);
+        Assert.Equal(3, sales.Count);
+        Assert.All(sales, sale => Assert.True(sale.Total > 0 && sale.ItemCount > 0));
     }
 
     [Fact]
