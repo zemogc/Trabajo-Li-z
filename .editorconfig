@@ -61,3 +61,6 @@ dotnet_naming_style.underscore_camel_case.capitalization = camel_case
 [tests/**.cs]
 # xUnit test names read better with underscores.
 dotnet_diagnostic.CA1707.severity = none
+# Tests call the logging extension methods directly on purpose; performance rules do not apply.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
