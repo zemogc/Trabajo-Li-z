@@ -39,6 +39,17 @@ public class CatalogPresenterTests
     }
 
     [Fact]
+    public async Task Search_without_matches_tells_the_user()
+    {
+        _view.SearchTerm = " xyz ";
+
+        await _presenter.SearchAsync();
+
+        Assert.Empty(_view.Displayed);
+        Assert.Equal([CrudPresenter<Category>.NoResultsMessage("xyz")], _view.Messages);
+    }
+
+    [Fact]
     public async Task Blank_search_returns_everything()
     {
         _view.SearchTerm = "   ";
@@ -46,6 +57,7 @@ public class CatalogPresenterTests
         await _presenter.SearchAsync();
 
         Assert.Equal(3, _view.Displayed.Count);
+        Assert.Empty(_view.Messages);
     }
 
     [Fact]
