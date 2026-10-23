@@ -8,7 +8,7 @@ Aplicación de escritorio para operar un supermercado: registro de ventas con co
 
 Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el patrón **Model-View-Presenter (Passive View)**.
 
-![Listado de productos](docs/products.png)
+![Pantalla de inicio](docs/dashboard.png)
 
 ## Funcionalidades
 
@@ -26,6 +26,8 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 - Mensajes claros para errores esperados: nombres duplicados, registros en uso o registros eliminados por otro usuario.
 - Base de datos creada y migrada automáticamente al iniciar, con datos de ejemplo opcionales.
 - Atajos de teclado: `Ctrl+N` nuevo, `Ctrl+F` buscar, `Enter` editar, `Supr` eliminar, `Esc` cancelar. En ventas, `Enter` en la cantidad agrega el producto y `F9` registra la venta.
+
+![Listado de productos](docs/products.png)
 
 ![Edición de un producto](docs/product-editor.png)
 
@@ -106,14 +108,14 @@ Al iniciar, la aplicación crea la base de datos `Supermarket`, aplica el esquem
 docker compose up -d --wait
 ```
 
-El contenedor solo escucha en `127.0.0.1`. La contraseña de `sa` es una contraseña de desarrollo; para usar otra, define la variable `MSSQL_SA_PASSWORD` (o un archivo `.env`, que Git ignora) antes de levantarlo.
+El contenedor solo escucha en `127.0.0.1`, así que la cadena de conexión usa esa dirección y no `localhost`, que en Windows puede resolverse primero a IPv6 (`::1`). La contraseña de `sa` es una contraseña de desarrollo; para usar otra, define la variable `MSSQL_SA_PASSWORD` (o un archivo `.env`, que Git ignora) antes de levantarlo.
 
 Crea `src/Supermarket.WinForms/appsettings.Local.json`. Git lo ignora, así que no se sube al repositorio.
 
 ```json
 {
   "ConnectionStrings": {
-    "Supermarket": "Server=localhost,14333;Database=Supermarket;User Id=sa;Password=Dev_Passw0rd!;TrustServerCertificate=true"
+    "Supermarket": "Server=127.0.0.1,14333;Database=Supermarket;User Id=sa;Password=Dev_Passw0rd!;TrustServerCertificate=true"
   }
 }
 ```
