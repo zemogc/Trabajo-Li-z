@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Supermarket.Core.Receipts;
 using Supermarket.Data;
 using Supermarket.WinForms;
 using Supermarket.WinForms.Infrastructure;
@@ -47,6 +48,7 @@ builder.Logging.AddProvider(new FileLoggerProvider(logDirectory, TimeProvider.Sy
 builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(DatabaseOptions.SectionName));
 builder.Services.AddSqlServerData(connectionString);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(builder.Configuration.GetSection(StoreInfo.SectionName).Get<StoreInfo>() ?? new StoreInfo());
 builder.Services.AddSingleton<ModuleFactory>();
 builder.Services.AddSingleton<MainForm>();
 
