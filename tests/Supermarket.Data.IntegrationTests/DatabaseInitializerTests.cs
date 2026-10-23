@@ -22,10 +22,11 @@ public class DatabaseInitializerTests(SqlServerFixture database) : DatabaseTest(
         Assert.Equal(products.Count, (await Database.Products.GetAllAsync()).Count);
         Assert.All(products, p => Assert.False(string.IsNullOrEmpty(p.CategoryName)));
         Assert.Equal(2, products.Count(p => p.IsLowStock));
+        Assert.Equal(5, products.Count(p => p.ProviderName is not null));
     }
 
     [Fact]
-    public async Task Upgrades_databases_created_before_minimum_stock_existed()
+    public async Task Upgrades_databases_created_with_the_first_schema_version()
     {
         var connectionString = new SqlConnectionStringBuilder(Database.ConnectionString)
         {
@@ -34,22 +35,25 @@ public class DatabaseInitializerTests(SqlServerFixture database) : DatabaseTest(
         var initializer = new DatabaseInitializer(connectionString, NullLogger<DatabaseInitializer>.Instance);
         await initializer.InitializeAsync(seedSampleData: true);
 
-        // Recreate the v1 shape of the table, which had no MinimumStock column.
+        // Recreate the v1 shape of the table, which had neither MinimumStock nor ProviderId.
         await using (var connection = new SqlConnection(connectionString))
         {
             await connection.ExecuteAsync(
                 """
-                ALTER TABLE dbo.Products DROP CONSTRAINT CK_Products_MinimumStock, DF_Products_MinimumStock;
-                ALTER TABLE dbo.Products DROP COLUMN MinimumStock;
+                DROP INDEX IX_Products_ProviderId ON dbo.Products;
+                ALTER TABLE dbo.Products DROP CONSTRAINT CK_Products_MinimumStock, DF_Products_MinimumStock, FK_Products_Providers;
+                ALTER TABLE dbo.Products DROP COLUMN MinimumStock, ProviderId;
                 """);
         }
 
         await initializer.InitializeAsync(seedSampleData: false);
 
         await using var upgraded = new SqlConnection(connectionString);
-        var minimums = (await upgraded.QueryAsync<int>("SELECT MinimumStock FROM dbo.Products;")).ToList();
-        Assert.Equal(6, minimums.Count);
-        Assert.All(minimums, value => Assert.Equal(Product.DefaultMinimumStock, value));
+        var rows = (await upgraded.QueryAsync<(int MinimumStock, int? ProviderId)>(
+            "SELECT MinimumStock, ProviderId FROM dbo.Products;")).ToList();
+        Assert.Equal(6, rows.Count);
+        Assert.All(rows, row => Assert.Equal(Product.DefaultMinimumStock, row.MinimumStock));
+        Assert.All(rows, row => Assert.Null(row.ProviderId));
     }
 
     [Fact]

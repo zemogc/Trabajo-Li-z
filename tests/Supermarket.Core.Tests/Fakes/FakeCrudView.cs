@@ -88,5 +88,9 @@ internal sealed class FakeProductView : FakeCrudView<Product>, IProductView
 {
     public IReadOnlyList<Category> Categories { get; private set; } = [];
 
+    public IReadOnlyList<Provider> Providers { get; private set; } = [];
+
     public void DisplayCategories(IReadOnlyList<Category> categories) => Categories = categories;
+
+    public void DisplayProviders(IReadOnlyList<Provider> providers) => Providers = providers;
 }

@@ -40,5 +40,16 @@ BEGIN
                  (N'Agua sin gas 600 ml', 1800.00, 120, 40, N'Bebidas'),
                  (N'Jabón de loza 500 g', 5600.00, 4, 5, N'Aseo')) AS seed (Name, Price, Stock, MinimumStock, CategoryName)
     INNER JOIN dbo.Categories AS c ON c.Name = seed.CategoryName;
+
+    UPDATE p
+    SET ProviderId = pr.Id
+    FROM dbo.Products AS p
+    INNER JOIN dbo.Categories AS c ON c.Id = p.CategoryId
+    INNER JOIN dbo.Providers AS pr
+        ON pr.Name = CASE c.Name
+                         WHEN N'Lácteos' THEN N'Alimentos La Granja'
+                         WHEN N'Granos' THEN N'Distribuidora del Valle'
+                         WHEN N'Bebidas' THEN N'Comercializadora Andina'
+                     END;
 END;
 GO

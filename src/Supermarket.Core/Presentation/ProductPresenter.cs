@@ -8,10 +8,14 @@ public sealed class ProductPresenter(
     IProductView view,
     IRepository<Product> products,
     IRepository<Category> categories,
+    IRepository<Provider> providers,
     ILogger<ProductPresenter> logger)
     : CrudPresenter<Product>(view, products, logger)
 {
-    // Categories are reloaded every time the screen is shown so new ones are available right away.
-    protected override async Task OnLoadingAsync() =>
+    // Lookups are reloaded every time the screen is shown so new entries are available right away.
+    protected override async Task OnLoadingAsync()
+    {
         view.DisplayCategories(await categories.GetAllAsync());
+        view.DisplayProviders(await providers.GetAllAsync());
+    }
 }

@@ -43,6 +43,15 @@ public sealed class Product : IEntity
     [DisplayName("Categoría")]
     public string? CategoryName { get; set; }
 
+    /// <summary>Usual supplier of the product. Optional: not every product has one assigned.</summary>
+    [DisplayName("Proveedor")]
+    [Range(1, int.MaxValue, ErrorMessage = "El proveedor seleccionado no es válido.")]
+    public int? ProviderId { get; set; }
+
+    /// <summary>Read-only projection of the provider name, populated when products are queried.</summary>
+    [DisplayName("Proveedor")]
+    public string? ProviderName { get; set; }
+
     public bool IsNew => Id == 0;
 
     public bool IsLowStock => Stock <= MinimumStock;
