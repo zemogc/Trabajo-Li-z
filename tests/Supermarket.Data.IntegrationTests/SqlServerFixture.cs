@@ -32,6 +32,8 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
     public IRepository<Product> Products => Services.GetRequiredService<IRepository<Product>>();
 
+    public ISaleRepository Sales => Services.GetRequiredService<ISaleRepository>();
+
     public DatabaseInitializer Initializer => Services.GetRequiredService<DatabaseInitializer>();
 
     public async Task InitializeAsync()
@@ -57,6 +59,8 @@ public sealed class SqlServerFixture : IAsyncLifetime
         await using var connection = new SqlConnection(ConnectionString);
         await connection.ExecuteAsync(
             """
+            DELETE FROM dbo.SaleLines;
+            DELETE FROM dbo.Sales;
             DELETE FROM dbo.Products;
             DELETE FROM dbo.Categories;
             DELETE FROM dbo.Providers;

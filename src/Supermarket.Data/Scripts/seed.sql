@@ -51,5 +51,44 @@ BEGIN
                          WHEN N'Granos' THEN N'Distribuidora del Valle'
                          WHEN N'Bebidas' THEN N'Comercializadora Andina'
                      END;
+
+    -- A few past sales so the history is not empty. Totals use the seeded prices.
+    DECLARE @cash INT = (SELECT Id FROM dbo.PaymentMethods WHERE Name = N'Efectivo');
+    DECLARE @debit INT = (SELECT Id FROM dbo.PaymentMethods WHERE Name = N'Tarjeta débito');
+
+    IF @cash IS NOT NULL AND @debit IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.Sales)
+    BEGIN
+        DECLARE @sales TABLE (SaleNo INT, PaymentMethodId INT, HoursAgo INT);
+        INSERT INTO @sales VALUES (1, @cash, 26), (2, @debit, 5), (3, @cash, 1);
+
+        DECLARE @lines TABLE (SaleNo INT, ProductName NVARCHAR(100), Quantity INT);
+        INSERT INTO @lines
+        VALUES (1, N'Leche entera 1 L', 2), (1, N'Arroz 1 kg', 1),
+               (2, N'Agua sin gas 600 ml', 6),
+               (3, N'Queso campesino 500 g', 1), (3, N'Lenteja 500 g', 2);
+
+        DECLARE @saleNo INT = 1, @saleId INT;
+        WHILE @saleNo <= 3
+        BEGIN
+            INSERT INTO dbo.Sales (CreatedAt, PaymentMethodId, Total)
+            SELECT DATEADD(HOUR, -s.HoursAgo, SYSUTCDATETIME()), s.PaymentMethodId,
+                   (SELECT SUM(l.Quantity * p.Price)
+                    FROM @lines AS l
+                    INNER JOIN dbo.Products AS p ON p.Name = l.ProductName
+                    WHERE l.SaleNo = s.SaleNo)
+            FROM @sales AS s
+            WHERE s.SaleNo = @saleNo;
+
+            SET @saleId = SCOPE_IDENTITY();
+
+            INSERT INTO dbo.SaleLines (SaleId, ProductId, Quantity, UnitPrice)
+            SELECT @saleId, p.Id, l.Quantity, p.Price
+            FROM @lines AS l
+            INNER JOIN dbo.Products AS p ON p.Name = l.ProductName
+            WHERE l.SaleNo = @saleNo;
+
+            SET @saleNo += 1;
+        END;
+    END;
 END;
 GO

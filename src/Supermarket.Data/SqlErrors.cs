@@ -10,7 +10,7 @@ namespace Supermarket.Data;
 internal static class SqlErrors
 {
     // https://learn.microsoft.com/sql/relational-databases/errors-events/database-engine-events-and-errors
-    private const int ConstraintViolation = 547;
+    internal const int ConstraintViolation = 547;
     private const int DuplicateKeyInUniqueIndex = 2601;
     private const int DuplicateKeyInUniqueConstraint = 2627;
 

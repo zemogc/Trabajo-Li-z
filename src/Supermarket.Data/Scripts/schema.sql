@@ -75,3 +75,37 @@ BEGIN
     CREATE INDEX IX_Products_ProviderId ON dbo.Products (ProviderId);
 END;
 GO
+
+-- v4: sales. Lines keep the unit price of the moment of the sale.
+IF OBJECT_ID(N'dbo.Sales', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Sales
+    (
+        Id              INT IDENTITY(1, 1) NOT NULL CONSTRAINT PK_Sales PRIMARY KEY,
+        CreatedAt       DATETIME2(0)       NOT NULL CONSTRAINT DF_Sales_CreatedAt DEFAULT (SYSUTCDATETIME()),
+        PaymentMethodId INT                NOT NULL
+            CONSTRAINT FK_Sales_PaymentMethods REFERENCES dbo.PaymentMethods (Id),
+        Total           DECIMAL(18, 2)     NOT NULL CONSTRAINT CK_Sales_Total CHECK (Total > 0)
+    );
+
+    CREATE INDEX IX_Sales_CreatedAt ON dbo.Sales (CreatedAt DESC);
+    CREATE INDEX IX_Sales_PaymentMethodId ON dbo.Sales (PaymentMethodId);
+END;
+GO
+
+IF OBJECT_ID(N'dbo.SaleLines', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SaleLines
+    (
+        SaleId    INT            NOT NULL
+            CONSTRAINT FK_SaleLines_Sales REFERENCES dbo.Sales (Id) ON DELETE CASCADE,
+        ProductId INT            NOT NULL
+            CONSTRAINT FK_SaleLines_Products REFERENCES dbo.Products (Id),
+        Quantity  INT            NOT NULL CONSTRAINT CK_SaleLines_Quantity CHECK (Quantity > 0),
+        UnitPrice DECIMAL(18, 2) NOT NULL CONSTRAINT CK_SaleLines_UnitPrice CHECK (UnitPrice > 0),
+        CONSTRAINT PK_SaleLines PRIMARY KEY (SaleId, ProductId)
+    );
+
+    CREATE INDEX IX_SaleLines_ProductId ON dbo.SaleLines (ProductId);
+END;
+GO

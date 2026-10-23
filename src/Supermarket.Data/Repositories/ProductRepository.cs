@@ -96,11 +96,20 @@ internal sealed class ProductRepository(IDbConnectionFactory connections) : IRep
 
     public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        await using var connection = await connections.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-        var affected = await connection.ExecuteAsync(new CommandDefinition(
-            "DELETE FROM dbo.Products WHERE Id = @id;",
-            new { id },
-            cancellationToken: cancellationToken)).ConfigureAwait(false);
+        int affected;
+        try
+        {
+            await using var connection = await connections.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            affected = await connection.ExecuteAsync(new CommandDefinition(
+                "DELETE FROM dbo.Products WHERE Id = @id;",
+                new { id },
+                cancellationToken: cancellationToken)).ConfigureAwait(false);
+        }
+        catch (SqlException ex)
+        {
+            // Products that appear in registered sales are kept to preserve the history.
+            throw SqlErrors.TranslateDelete(ex);
+        }
 
         if (affected == 0)
         {
