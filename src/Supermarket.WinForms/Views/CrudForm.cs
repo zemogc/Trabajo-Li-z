@@ -35,14 +35,14 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
         ForeColor = Theme.Text;
         KeyPreview = true;
 
-        _saveButton = CreateButton("Guardar", Glyph.Save, (_, _) => SaveRequested?.Invoke(this, EventArgs.Empty), primary: true);
+        _saveButton = Ui.Button("Guardar", Glyph.Save, (_, _) => SaveRequested?.Invoke(this, EventArgs.Empty), primary: true);
 
         BuildEditorPanel();
         BuildGrid();
         Controls.Add(_grid);
         Controls.Add(_editorPanel);
         Controls.Add(BuildToolbar());
-        Controls.Add(BuildHeader(title));
+        Controls.Add(Ui.Header(title));
         Controls.Add(BuildStatusBar());
     }
 
@@ -129,13 +129,10 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
     public void ShowErrors(IReadOnlyList<string> errors)
     {
         _statusLabel.Text = string.Empty;
-        var text = errors.Count == 1 ? errors[0] : string.Join(Environment.NewLine, errors.Select(e => $"• {e}"));
-        MessageBox.Show(this, text, "No se pudo completar la operación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        Ui.ShowErrors(this, errors);
     }
 
-    public bool Confirm(string question) =>
-        MessageBox.Show(this, question, "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
-        == DialogResult.Yes;
+    public bool Confirm(string question) => Ui.Confirm(this, question);
 
     protected abstract void FillEditor(TEntity entity);
 
@@ -164,30 +161,8 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
         };
     }
 
-    protected void AddColumn(string property, string header, float fillWeight = 100, string? format = null, bool alignRight = false, int minimumWidth = 70)
-    {
-        var column = new DataGridViewTextBoxColumn
-        {
-            DataPropertyName = property,
-            HeaderText = header,
-            FillWeight = fillWeight,
-            MinimumWidth = minimumWidth,
-            SortMode = DataGridViewColumnSortMode.Automatic,
-        };
-
-        if (format is not null)
-        {
-            column.DefaultCellStyle.Format = format;
-        }
-
-        if (alignRight)
-        {
-            column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            column.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleRight;
-        }
-
-        _grid.Columns.Add(column);
-    }
+    protected void AddColumn(string property, string header, float fillWeight = 100, string? format = null, bool alignRight = false, int minimumWidth = 70) =>
+        _grid.Columns.Add(Ui.Column(property, header, fillWeight, format, alignRight, minimumWidth));
 
     protected void AddField(string label, Control input)
     {
@@ -231,37 +206,6 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
         }
     }
 
-    private static Button CreateButton(string text, char glyph, EventHandler onClick, bool primary = false)
-    {
-        var button = new Button
-        {
-            Text = text,
-            Image = Glyph.Render(glyph, primary ? Color.White : Theme.Text),
-            TextImageRelation = TextImageRelation.ImageBeforeText,
-            ImageAlign = ContentAlignment.MiddleLeft,
-            AutoSize = true,
-            Padding = new Padding(8, 4, 8, 4),
-            Margin = new Padding(0, 0, 8, 0),
-            FlatStyle = FlatStyle.Flat,
-            BackColor = primary ? Theme.Accent : Color.White,
-            ForeColor = primary ? Color.White : Theme.Text,
-            Cursor = Cursors.Hand,
-        };
-        button.FlatAppearance.BorderColor = primary ? Theme.Accent : Theme.Border;
-        button.Click += onClick;
-        return button;
-    }
-
-    private static Label BuildHeader(string title) => new()
-    {
-        Text = title,
-        Font = Theme.TitleFont,
-        Dock = DockStyle.Top,
-        Height = 56,
-        Padding = new Padding(20, 0, 0, 0),
-        TextAlign = ContentAlignment.MiddleLeft,
-    };
-
     private FlowLayoutPanel BuildToolbar()
     {
         _toolbar.Dock = DockStyle.Top;
@@ -282,52 +226,23 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
         };
 
         _toolbar.Controls.Add(_searchBox);
-        _toolbar.Controls.Add(CreateButton("Buscar", Glyph.Search, (_, _) => SearchRequested?.Invoke(this, EventArgs.Empty)));
-        _toolbar.Controls.Add(CreateButton("Nuevo", Glyph.Add, (_, _) => CreateRequested?.Invoke(this, EventArgs.Empty)));
-        _toolbar.Controls.Add(CreateButton("Editar", Glyph.Edit, (_, _) => EditRequested?.Invoke(this, EventArgs.Empty)));
+        _toolbar.Controls.Add(Ui.Button("Buscar", Glyph.Search, (_, _) => SearchRequested?.Invoke(this, EventArgs.Empty)));
+        _toolbar.Controls.Add(Ui.Button("Nuevo", Glyph.Add, (_, _) => CreateRequested?.Invoke(this, EventArgs.Empty)));
+        _toolbar.Controls.Add(Ui.Button("Editar", Glyph.Edit, (_, _) => EditRequested?.Invoke(this, EventArgs.Empty)));
 
-        var deleteButton = CreateButton("Eliminar", Glyph.Delete, (_, _) => DeleteRequested?.Invoke(this, EventArgs.Empty));
+        var deleteButton = Ui.Button("Eliminar", Glyph.Delete, (_, _) => DeleteRequested?.Invoke(this, EventArgs.Empty));
         deleteButton.ForeColor = Theme.Danger;
         deleteButton.Image = Glyph.Render(Glyph.Delete, Theme.Danger);
         _toolbar.Controls.Add(deleteButton);
-        _toolbar.Controls.Add(CreateButton("Exportar", Glyph.Export, (_, _) => ExportToCsv()));
+        _toolbar.Controls.Add(Ui.Button("Exportar", Glyph.Export, (_, _) => ExportToCsv()));
 
         return _toolbar;
     }
 
     private void BuildGrid()
     {
-        _grid.Dock = DockStyle.Fill;
-        _grid.AutoGenerateColumns = false;
+        Ui.Grid(_grid);
         _grid.DataSource = _bindingSource;
-        _grid.ReadOnly = true;
-        _grid.AllowUserToAddRows = false;
-        _grid.AllowUserToDeleteRows = false;
-        _grid.AllowUserToResizeRows = false;
-        _grid.MultiSelect = false;
-        _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        _grid.RowHeadersVisible = false;
-        _grid.ScrollBars = ScrollBars.Vertical;
-        _grid.BackgroundColor = Color.White;
-        _grid.BorderStyle = BorderStyle.None;
-        _grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-        _grid.GridColor = Theme.Border;
-        _grid.EnableHeadersVisualStyles = false;
-        _grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-        _grid.ColumnHeadersHeight = 36;
-        _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-        _grid.ColumnHeadersDefaultCellStyle.BackColor = Theme.Surface;
-        _grid.ColumnHeadersDefaultCellStyle.ForeColor = Theme.MutedText;
-        _grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Theme.Surface;
-        _grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = Theme.MutedText;
-        _grid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
-        _grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(6, 0, 6, 0);
-        _grid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
-        _grid.DefaultCellStyle.Padding = new Padding(6, 0, 6, 0);
-        _grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
-        _grid.DefaultCellStyle.SelectionForeColor = Theme.Text;
-        _grid.RowTemplate.Height = 32;
 
         _grid.CellDoubleClick += (_, e) =>
         {
@@ -375,7 +290,7 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
             Padding = new Padding(0, 8, 0, 0),
         };
         buttons.Controls.Add(_saveButton);
-        buttons.Controls.Add(CreateButton("Cancelar", Glyph.Cancel, (_, _) => CancelRequested?.Invoke(this, EventArgs.Empty)));
+        buttons.Controls.Add(Ui.Button("Cancelar", Glyph.Cancel, (_, _) => CancelRequested?.Invoke(this, EventArgs.Empty)));
 
         // Docked controls are laid out in reverse order of insertion.
         _editorPanel.Controls.Add(buttons);
