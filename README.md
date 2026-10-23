@@ -9,7 +9,10 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 ## Funcionalidades
 
 - CRUD completo de productos, categorías, proveedores y medios de pago.
-- Búsqueda por código o por nombre parcial. En productos también busca por categoría.
+- Búsqueda por código o por nombre parcial. En productos también busca por categoría y por proveedor.
+- Cada producto puede tener un proveedor habitual. Un proveedor o una categoría en uso no se puede eliminar.
+- Ordenamiento haciendo clic en los encabezados de la tabla. El orden se mantiene al refrescar la lista.
+- Exportación a CSV de lo que muestra la tabla, lista para abrir en Excel: UTF-8, separador de la configuración regional y protección contra inyección de fórmulas.
 - Stock mínimo por producto: los productos que necesitan reposición se resaltan, y la barra de estado indica cuántos son.
 - Validación en dos niveles: reglas de dominio con Data Annotations y restricciones en la base de datos (`UNIQUE`, `CHECK`, `FOREIGN KEY`).
 - Mensajes claros para errores esperados: nombres duplicados, registros en uso o registros eliminados por otro usuario.
@@ -55,7 +58,7 @@ flowchart LR
 - **Un presentador genérico.** `CrudPresenter<T>` implementa el flujo una sola vez. `CatalogPresenter<T>` y `ProductPresenter` solo agregan lo que es propio de cada uno, en lugar de duplicar cuatro presentadores casi idénticos.
 - **Excepciones de dominio.** Los repositorios convierten los errores 547, 2601 y 2627 de SQL Server en `DataConflictException`, y las filas afectadas = 0 en `EntityNotFoundException`. Los presentadores nunca dependen del proveedor de base de datos.
 - **SQL seguro.** Todos los valores viajan como parámetros. Los comodines de `LIKE` (`%`, `_`, `[`) se escapan para que buscar "50%" encuentre exactamente eso.
-- **Esquema versionado.** Los scripts `schema.sql` y `seed.sql` son idempotentes, van embebidos en el ensamblado y son los mismos que usan la aplicación y las pruebas de integración. Los cambios de esquema se agregan como pasos que actualizan bases existentes (por ejemplo, la columna `MinimumStock`), y una prueba de integración verifica esa actualización.
+- **Esquema versionado.** Los scripts `schema.sql` y `seed.sql` son idempotentes, van embebidos en el ensamblado y son los mismos que usan la aplicación y las pruebas de integración. Los cambios de esquema se agregan como pasos que actualizan bases existentes (`MinimumStock`, `ProviderId`), y una prueba de integración parte de una base con el esquema original y verifica la actualización.
 - **Async de punta a punta**, con protección contra dobles clics mientras hay una operación en curso.
 - **Calidad en la compilación:** `TreatWarningsAsErrors`, analizadores .NET (`latest-recommended`), estilo de código verificado en el build, gestión central de paquetes y auditoría de vulnerabilidades de NuGet.
 
@@ -98,11 +101,11 @@ Crea `src/Supermarket.WinForms/appsettings.Local.json`. Git lo ignora, así que 
 `build.ps1` ejecuta los mismos controles que correría un servidor de integración continua, pero en tu máquina:
 
 ```powershell
-./build.ps1                    # formato, build Release, pruebas unitarias y de integración
+./build.ps1                    # formato, build Release, pruebas y reporte de cobertura
 ./build.ps1 -SkipIntegration   # sin Docker
 ```
 
-Si Docker no está corriendo, el script omite las pruebas de integración y lo indica.
+Si Docker no está corriendo, el script omite las pruebas de integración y lo indica. El reporte de cobertura queda en `artifacts/coverage/index.html`.
 
 ## Pruebas
 
@@ -110,9 +113,22 @@ Si Docker no está corriendo, el script omite las pruebas de integración y lo i
 # Pruebas unitarias de dominio y presentadores (rápidas, sin dependencias externas)
 dotnet test tests/Supermarket.Core.Tests
 
+# Pruebas de la capa WinForms: ordenamiento y exportación CSV
+dotnet test tests/Supermarket.WinForms.Tests
+
 # Pruebas de integración contra un SQL Server real (requiere Docker)
 dotnet test tests/Supermarket.Data.IntegrationTests
 ```
+
+Cobertura de líneas medida con `build.ps1`:
+
+| Capa | Cobertura |
+| --- | --- |
+| `Supermarket.Core` | 92 % |
+| `Supermarket.Data` | 94 % |
+| `Supermarket.WinForms` | 8 % |
+
+La lógica vive en `Core` y `Data`, que están cubiertos casi por completo. Los formularios WinForms solo dibujan y reenvían eventos; esa capa se prueba manualmente y con pruebas unitarias de sus componentes no visuales.
 
 Las pruebas de integración usan [Testcontainers](https://dotnet.testcontainers.org/) para levantar un SQL Server 2022 desechable. Validan los repositorios, las restricciones de la base de datos y el inicializador contra el motor real, no contra un simulador en memoria.
 
@@ -125,6 +141,7 @@ Las pruebas de integración usan [Testcontainers](https://dotnet.testcontainers.
 │   └── Supermarket.WinForms      # Vistas y composition root
 ├── tests
 │   ├── Supermarket.Core.Tests                 # xUnit, sin base de datos
+│   ├── Supermarket.WinForms.Tests             # Ordenamiento y exportación CSV
 │   └── Supermarket.Data.IntegrationTests      # xUnit + Testcontainers
 ├── build.ps1                     # Verificación local: formato, build y pruebas
 ├── Directory.Build.props         # Configuración común de compilación y análisis
