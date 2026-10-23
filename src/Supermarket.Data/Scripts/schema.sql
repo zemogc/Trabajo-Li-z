@@ -116,3 +116,37 @@ BEGIN
     ALTER TABLE dbo.Sales ADD CancelledAt DATETIME2(0) NULL;
 END;
 GO
+
+-- v6: merchandise received from providers.
+IF OBJECT_ID(N'dbo.StockEntries', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.StockEntries
+    (
+        Id         INT IDENTITY(1, 1) NOT NULL CONSTRAINT PK_StockEntries PRIMARY KEY,
+        CreatedAt  DATETIME2(0)       NOT NULL CONSTRAINT DF_StockEntries_CreatedAt DEFAULT (SYSUTCDATETIME()),
+        ProviderId INT                NULL
+            CONSTRAINT FK_StockEntries_Providers REFERENCES dbo.Providers (Id),
+        Notes      NVARCHAR(200)      NULL
+    );
+
+    CREATE INDEX IX_StockEntries_CreatedAt ON dbo.StockEntries (CreatedAt DESC);
+    CREATE INDEX IX_StockEntries_ProviderId ON dbo.StockEntries (ProviderId);
+END;
+GO
+
+IF OBJECT_ID(N'dbo.StockEntryLines', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.StockEntryLines
+    (
+        EntryId   INT            NOT NULL
+            CONSTRAINT FK_StockEntryLines_StockEntries REFERENCES dbo.StockEntries (Id) ON DELETE CASCADE,
+        ProductId INT            NOT NULL
+            CONSTRAINT FK_StockEntryLines_Products REFERENCES dbo.Products (Id),
+        Quantity  INT            NOT NULL CONSTRAINT CK_StockEntryLines_Quantity CHECK (Quantity > 0),
+        UnitCost  DECIMAL(18, 2) NOT NULL CONSTRAINT CK_StockEntryLines_UnitCost CHECK (UnitCost >= 0),
+        CONSTRAINT PK_StockEntryLines PRIMARY KEY (EntryId, ProductId)
+    );
+
+    CREATE INDEX IX_StockEntryLines_ProductId ON dbo.StockEntryLines (ProductId);
+END;
+GO

@@ -12,6 +12,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <Authors>Zemog Gomez</Authors>
     <Product>Supermarket</Product>
+    <Version>1.0.0</Version>
     <Copyright>Copyright (c) Zemog Gomez</Copyright>
   </PropertyGroup>
 </Project>
