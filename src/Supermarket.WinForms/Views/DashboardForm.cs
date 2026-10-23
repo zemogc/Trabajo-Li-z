@@ -37,12 +37,12 @@ internal sealed class DashboardForm : Form, IDashboardView
         body.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
 
         _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.ProductName), "Producto", fillWeight: 50, minimumWidth: 140, sortable: false));
-        _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.Units), "Unidades", fillWeight: 20, format: "N0", alignRight: true, minimumWidth: 85, sortable: false));
-        _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.Revenue), "Ingresos", fillWeight: 30, format: "N2", alignRight: true, minimumWidth: 105, sortable: false));
+        _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.Units), "Unidades", format: "N0", alignRight: true, minimumWidth: 40, sortable: false, fitContent: true));
+        _topProducts.Columns.Add(Ui.Column(nameof(ProductSales.Revenue), "Ingresos", format: "N2", alignRight: true, minimumWidth: 40, sortable: false, fitContent: true));
 
         _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.PaymentMethodName), "Medio de pago", fillWeight: 45, minimumWidth: 120, sortable: false));
-        _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.SalesCount), "Ventas", fillWeight: 20, format: "N0", alignRight: true, minimumWidth: 70, sortable: false));
-        _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.Total), "Total", fillWeight: 35, format: "N2", alignRight: true, minimumWidth: 105, sortable: false));
+        _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.SalesCount), "Ventas", format: "N0", alignRight: true, minimumWidth: 40, sortable: false, fitContent: true));
+        _paymentMethods.Columns.Add(Ui.Column(nameof(PaymentMethodSales.Total), "Total", format: "N2", alignRight: true, minimumWidth: 40, sortable: false, fitContent: true));
 
         _restock.Columns.Add(Ui.Column(nameof(Product.Name), "Producto", fillWeight: 34, minimumWidth: 140, sortable: false));
         _restock.Columns.Add(Ui.Column(nameof(Product.CategoryName), "Categoría", fillWeight: 18, minimumWidth: 90, sortable: false));

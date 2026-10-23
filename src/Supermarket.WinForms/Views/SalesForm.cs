@@ -48,7 +48,7 @@ internal sealed class SalesForm : Form, ISalesView
     };
 
     private readonly Panel _checkout = new() { Dock = DockStyle.Fill, Padding = new Padding(20, 0, 10, 16) };
-    private readonly Panel _sidebar = new() { Dock = DockStyle.Right, Width = 480, Padding = new Padding(10, 0, 20, 16) };
+    private readonly Panel _sidebar = new() { Dock = DockStyle.Right, Width = 540, Padding = new Padding(10, 0, 20, 16) };
     private readonly ToolStripStatusLabel _status = new() { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
 
     // Rebinding the history grid moves its selection; that must not look like a user choice.
@@ -258,7 +258,7 @@ internal sealed class SalesForm : Form, ISalesView
         itemRow.Controls.Add(Ui.Button("Agregar", Glyph.Add, (_, _) => AddItemRequested?.Invoke(this, EventArgs.Empty)));
 
         _cart.Columns.Add(Ui.Column(nameof(SaleLine.ProductName), "Producto", fillWeight: 46, minimumWidth: 140, sortable: false));
-        _cart.Columns.Add(Ui.Column(nameof(SaleLine.Quantity), "Cantidad", fillWeight: 14, format: "N0", alignRight: true, minimumWidth: 85, sortable: false));
+        _cart.Columns.Add(Ui.Column(nameof(SaleLine.Quantity), "Cantidad", fillWeight: 14, format: "N0", alignRight: true, minimumWidth: 100, sortable: false));
         _cart.Columns.Add(Ui.Column(nameof(SaleLine.UnitPrice), "Precio", fillWeight: 20, format: "N2", alignRight: true, minimumWidth: 95, sortable: false));
         _cart.Columns.Add(Ui.Column(nameof(SaleLine.Subtotal), "Subtotal", fillWeight: 20, format: "N2", alignRight: true, minimumWidth: 105, sortable: false));
         _cart.KeyDown += (_, e) =>
@@ -297,11 +297,12 @@ internal sealed class SalesForm : Form, ISalesView
 
     private void BuildSidebar()
     {
-        _history.Columns.Add(Ui.Column(nameof(Sale.Id), "N.º", fillWeight: 10, minimumWidth: 55));
-        _history.Columns.Add(Ui.Column(nameof(Sale.CreatedAtLocal), "Fecha", fillWeight: 38, format: "dd/MM/yyyy HH:mm", minimumWidth: 140));
-        _history.Columns.Add(Ui.Column(nameof(Sale.PaymentMethodName), "Pago", fillWeight: 26, minimumWidth: 90));
-        _history.Columns.Add(Ui.Column(nameof(Sale.Status), "Estado", fillWeight: 20, minimumWidth: 85));
-        _history.Columns.Add(Ui.Column(nameof(Sale.Total), "Total", fillWeight: 26, format: "N2", alignRight: true, minimumWidth: 100));
+        // Recent sales are from the last days, so the year is left out to make room.
+        _history.Columns.Add(Ui.Column(nameof(Sale.Id), "N.º", minimumWidth: 40, fitContent: true));
+        _history.Columns.Add(Ui.Column(nameof(Sale.CreatedAtLocal), "Fecha", format: "dd/MM HH:mm", minimumWidth: 40, fitContent: true));
+        _history.Columns.Add(Ui.Column(nameof(Sale.PaymentMethodName), "Pago", minimumWidth: 80));
+        _history.Columns.Add(Ui.Column(nameof(Sale.Status), "Estado", minimumWidth: 40, fitContent: true));
+        _history.Columns.Add(Ui.Column(nameof(Sale.Total), "Total", format: "N2", alignRight: true, minimumWidth: 40, fitContent: true));
 
         // Voided sales stay visible but clearly out of the totals.
         _history.CellFormatting += (_, e) =>
