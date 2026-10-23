@@ -90,6 +90,8 @@ internal sealed class SalesForm : Form, ISalesView
 
     public event EventHandler? CancelSaleRequested;
 
+    public event EventHandler? PrintReceiptRequested;
+
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Product? SelectedProduct => _product.SelectedItem as Product;
@@ -166,6 +168,29 @@ internal sealed class SalesForm : Form, ISalesView
 
     public void DisplaySaleLines(IReadOnlyList<SaleLine> lines) =>
         _historyLines.DataSource = new BindingList<SaleLine>([.. lines]);
+
+    public void ShowReceipt(string title, IReadOnlyList<string> lines)
+    {
+        using var document = new ReceiptDocument(title, lines);
+        using var preview = new PrintPreviewDialog
+        {
+            Document = document,
+            Text = title,
+            Width = 560,
+            Height = 780,
+            StartPosition = FormStartPosition.CenterParent,
+            UseAntiAlias = true,
+        };
+
+        try
+        {
+            preview.ShowDialog(this);
+        }
+        catch (System.Drawing.Printing.InvalidPrinterException)
+        {
+            ShowErrors(["No hay una impresora instalada. Instale una (o \"Microsoft Print to PDF\") para ver e imprimir recibos."]);
+        }
+    }
 
     public void SetBusy(bool isBusy)
     {
@@ -288,6 +313,13 @@ internal sealed class SalesForm : Form, ISalesView
                 e.CellStyle.Font = _strikeout ??= new Font(_history.Font, FontStyle.Strikeout);
             }
         };
+        _history.CellDoubleClick += (_, e) =>
+        {
+            if (e.RowIndex >= 0)
+            {
+                PrintReceiptRequested?.Invoke(this, EventArgs.Empty);
+            }
+        };
         _history.SelectionChanged += (_, _) =>
         {
             if (!_bindingHistory)
@@ -304,6 +336,7 @@ internal sealed class SalesForm : Form, ISalesView
         var cancel = Ui.Button("Anular venta", Glyph.Cancel, (_, _) => CancelSaleRequested?.Invoke(this, EventArgs.Empty));
         cancel.ForeColor = Theme.Danger;
         cancel.Image = Glyph.Render(Glyph.Cancel, Theme.Danger);
+        historyActions.Controls.Add(Ui.Button("Recibo", Glyph.Print, (_, _) => PrintReceiptRequested?.Invoke(this, EventArgs.Empty)));
         historyActions.Controls.Add(cancel);
 
         var details = new Panel { Dock = DockStyle.Bottom, Height = 220, Padding = new Padding(0, 12, 0, 0) };
