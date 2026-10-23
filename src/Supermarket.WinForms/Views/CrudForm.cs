@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using Supermarket.Core.Domain;
 using Supermarket.Core.Presentation;
 using Supermarket.WinForms.Infrastructure;
@@ -70,9 +71,17 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
     public void DisplayEntities(IReadOnlyList<TEntity> entities)
     {
         var selectedId = SelectedEntity?.Id;
-        _bindingSource.DataSource = new BindingList<TEntity>([.. entities]);
+        var list = new SortableBindingList<TEntity>(entities);
 
-        var index = entities.ToList().FindIndex(e => e.Id == selectedId);
+        // Keep the order the user chose by clicking a column header.
+        if (_bindingSource.DataSource is SortableBindingList<TEntity> previous)
+        {
+            list.SortLike(previous);
+        }
+
+        _bindingSource.DataSource = list;
+
+        var index = list.ToList().FindIndex(e => e.Id == selectedId);
         if (index >= 0)
         {
             _bindingSource.Position = index;
@@ -163,7 +172,7 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
             HeaderText = header,
             FillWeight = fillWeight,
             MinimumWidth = minimumWidth,
-            SortMode = DataGridViewColumnSortMode.NotSortable,
+            SortMode = DataGridViewColumnSortMode.Automatic,
         };
 
         if (format is not null)
@@ -281,6 +290,7 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
         deleteButton.ForeColor = Theme.Danger;
         deleteButton.Image = Glyph.Render(Glyph.Delete, Theme.Danger);
         _toolbar.Controls.Add(deleteButton);
+        _toolbar.Controls.Add(CreateButton("Exportar", Glyph.Export, (_, _) => ExportToCsv()));
 
         return _toolbar;
     }
@@ -382,6 +392,47 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
         strip.Items.Add(_statusLabel);
         strip.Items.Add(_countLabel);
         return strip;
+    }
+
+    /// <summary>Exports exactly what the grid shows: visible columns, current order, formatted values.</summary>
+    private void ExportToCsv()
+    {
+        using var dialog = new SaveFileDialog
+        {
+            Title = "Exportar a CSV",
+            Filter = "Archivo CSV (*.csv)|*.csv",
+            FileName = $"{Text} {DateTime.Now:yyyy-MM-dd HHmm}.csv",
+            OverwritePrompt = true,
+        };
+
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var columns = _grid.Columns.Cast<DataGridViewColumn>()
+            .Where(c => c.Visible)
+            .OrderBy(c => c.DisplayIndex)
+            .ToList();
+        var rows = _grid.Rows.Cast<DataGridViewRow>()
+            .Select(row => (IReadOnlyList<string>)columns
+                .Select(c => row.Cells[c.Index].FormattedValue?.ToString() ?? string.Empty)
+                .ToList());
+
+        try
+        {
+            using var writer = new StreamWriter(dialog.FileName, append: false, CsvExporter.Encoding);
+            CsvExporter.Write(writer, [.. columns.Select(c => c.HeaderText)], rows, CultureInfo.CurrentCulture.TextInfo.ListSeparator);
+            ShowMessage($"Exportado: {dialog.FileName}");
+        }
+        catch (IOException ex)
+        {
+            ShowErrors([$"No se pudo guardar el archivo. {ex.Message}"]);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            ShowErrors([$"No tiene permisos para guardar en esa ubicación. {ex.Message}"]);
+        }
     }
 
     private void FocusFirstField()

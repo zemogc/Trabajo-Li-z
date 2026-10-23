@@ -7,5 +7,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Supermarket.Core.Tests/Supermarket.Core.Tests.csproj" />
     <Project Path="tests/Supermarket.Data.IntegrationTests/Supermarket.Data.IntegrationTests.csproj" />
+    <Project Path="tests/Supermarket.WinForms.Tests/Supermarket.WinForms.Tests.csproj" />
   </Folder>
 </Solution>
