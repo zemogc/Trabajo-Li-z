@@ -3,12 +3,21 @@
 [![Release](https://img.shields.io/github/v/release/zemogc/Trabajo-Li-z?label=versi%C3%B3n)](https://github.com/zemogc/Trabajo-Li-z/releases/latest)
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/)
 [![Pruebas](https://img.shields.io/badge/pruebas-179-2ea44f)](#pruebas)
+[![Cobertura](https://img.shields.io/badge/cobertura-81%25-2ea44f)](#pruebas)
 
 Aplicación de escritorio para operar un supermercado: registro de ventas con control de inventario, y administración de productos, categorías, proveedores y medios de pago.
 
 Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el patrón **Model-View-Presenter (Passive View)**.
 
 ![Pantalla de inicio](docs/dashboard.png)
+
+## En resumen
+
+- **Producto completo:** ventas con recibo, anulaciones, entradas de mercancía, reportes por período, indicadores del día y catálogo.
+- **Datos consistentes bajo concurrencia:** las ventas y anulaciones simultáneas no generan sobreventa ni devuelven stock dos veces, y lo demuestran pruebas de integración contra SQL Server real.
+- **Arquitectura MVP en capas:** la lógica vive en `Core`, sin dependencias de UI ni de base de datos, y se prueba con dobles escritos a mano.
+- **179 pruebas** (unitarias, de pantallas y de integración con Testcontainers) y 81 % de cobertura, verificadas con `build.ps1`.
+- **Listo para usar:** [descarga la última versión](https://github.com/zemogc/Trabajo-Li-z/releases/latest), un ejecutable para Windows que no requiere instalar .NET.
 
 ## Funcionalidades
 
