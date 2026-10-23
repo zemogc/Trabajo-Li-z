@@ -44,15 +44,15 @@ internal sealed class StockEntryForm : Form, IStockEntryView
         DropDownStyle = ComboBoxStyle.DropDownList,
         DisplayMember = nameof(Provider.Name),
         ValueMember = nameof(Provider.Id),
-        Width = 240,
-        Margin = new Padding(0, 6, 16, 0),
+        Width = 220,
+        Margin = new Padding(0, 6, 12, 0),
     };
 
     private readonly TextBox _notes = new()
     {
         MaxLength = StockEntry.NotesMaxLength,
-        PlaceholderText = "Observaciones (factura, remisión...)",
-        Width = 300,
+        PlaceholderText = "Observaciones",
+        Width = 230,
         Margin = new Padding(0, 6, 0, 0),
     };
 
@@ -61,7 +61,7 @@ internal sealed class StockEntryForm : Form, IStockEntryView
     private readonly DataGridView _historyLines = Ui.Grid();
     private readonly Label _total = new() { AutoSize = true, Font = Theme.TitleFont, Margin = new Padding(0, 0, 16, 0) };
     private readonly Panel _draft = new() { Dock = DockStyle.Fill, Padding = new Padding(20, 0, 10, 16) };
-    private readonly Panel _sidebar = new() { Dock = DockStyle.Right, Width = 480, Padding = new Padding(10, 0, 20, 16) };
+    private readonly Panel _sidebar = new() { Dock = DockStyle.Right, Width = 540, Padding = new Padding(10, 0, 20, 16) };
     private readonly ToolStripStatusLabel _status = new() { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
     private bool _bindingHistory;
 
@@ -254,7 +254,7 @@ internal sealed class StockEntryForm : Form, IStockEntryView
         itemRow.Controls.Add(Ui.Button("Agregar", Glyph.Add, (_, _) => AddItemRequested?.Invoke(this, EventArgs.Empty)));
 
         _lines.Columns.Add(Ui.Column(nameof(StockEntryLine.ProductName), "Producto", fillWeight: 46, minimumWidth: 140, sortable: false));
-        _lines.Columns.Add(Ui.Column(nameof(StockEntryLine.Quantity), "Cantidad", fillWeight: 14, format: "N0", alignRight: true, minimumWidth: 85, sortable: false));
+        _lines.Columns.Add(Ui.Column(nameof(StockEntryLine.Quantity), "Cantidad", fillWeight: 14, format: "N0", alignRight: true, minimumWidth: 100, sortable: false));
         _lines.Columns.Add(Ui.Column(nameof(StockEntryLine.UnitCost), "Costo unit.", fillWeight: 20, format: "N2", alignRight: true, minimumWidth: 100, sortable: false));
         _lines.Columns.Add(Ui.Column(nameof(StockEntryLine.Subtotal), "Subtotal", fillWeight: 20, format: "N2", alignRight: true, minimumWidth: 105, sortable: false));
         _lines.KeyDown += (_, e) =>
@@ -292,10 +292,10 @@ internal sealed class StockEntryForm : Form, IStockEntryView
 
     private void BuildSidebar()
     {
-        _history.Columns.Add(Ui.Column(nameof(StockEntry.Id), "N.º", fillWeight: 10, minimumWidth: 55));
-        _history.Columns.Add(Ui.Column(nameof(StockEntry.CreatedAtLocal), "Fecha", fillWeight: 34, format: "dd/MM/yyyy HH:mm", minimumWidth: 140));
+        _history.Columns.Add(Ui.Column(nameof(StockEntry.Id), "N.º", minimumWidth: 40, fitContent: true));
+        _history.Columns.Add(Ui.Column(nameof(StockEntry.CreatedAtLocal), "Fecha", format: "dd/MM HH:mm", minimumWidth: 40, fitContent: true));
         _history.Columns.Add(Ui.Column(nameof(StockEntry.ProviderName), "Proveedor", fillWeight: 30, minimumWidth: 100));
-        _history.Columns.Add(Ui.Column(nameof(StockEntry.TotalCost), "Costo", fillWeight: 26, format: "N2", alignRight: true, minimumWidth: 100));
+        _history.Columns.Add(Ui.Column(nameof(StockEntry.TotalCost), "Costo", format: "N2", alignRight: true, minimumWidth: 40, fitContent: true));
         _history.SelectionChanged += (_, _) =>
         {
             if (!_bindingHistory)
