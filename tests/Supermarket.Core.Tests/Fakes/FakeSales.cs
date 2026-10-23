@@ -13,6 +13,7 @@ internal sealed class FakeSalesView : ISalesView
     public event EventHandler? RegisterRequested;
     public event EventHandler? SaleSelected;
     public event EventHandler? CancelSaleRequested;
+    public event EventHandler? PrintReceiptRequested;
 
     public Product? SelectedProduct { get; set; }
 
@@ -61,6 +62,18 @@ internal sealed class FakeSalesView : ISalesView
     public void DisplayRecentSales(IReadOnlyList<Sale> sales) => RecentSales = sales;
 
     public void DisplaySaleLines(IReadOnlyList<SaleLine> lines) => SaleLines = lines;
+
+    public string? ReceiptTitle { get; private set; }
+
+    public IReadOnlyList<string> Receipt { get; private set; } = [];
+
+    public void ShowReceipt(string title, IReadOnlyList<string> lines)
+    {
+        ReceiptTitle = title;
+        Receipt = lines;
+    }
+
+    public void RaisePrintReceipt() => PrintReceiptRequested?.Invoke(this, EventArgs.Empty);
 
     public void SetBusy(bool isBusy) => BusyChanges.Add(isBusy);
 

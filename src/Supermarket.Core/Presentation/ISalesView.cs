@@ -20,6 +20,8 @@ public interface ISalesView : IOperationView
 
     event EventHandler? CancelSaleRequested;
 
+    event EventHandler? PrintReceiptRequested;
+
     Product? SelectedProduct { get; }
 
     int Quantity { get; }
@@ -43,4 +45,7 @@ public interface ISalesView : IOperationView
     void DisplayRecentSales(IReadOnlyList<Sale> sales);
 
     void DisplaySaleLines(IReadOnlyList<SaleLine> lines);
+
+    /// <summary>Shows a print preview of a receipt already laid out as fixed-width lines.</summary>
+    void ShowReceipt(string title, IReadOnlyList<string> lines);
 }
