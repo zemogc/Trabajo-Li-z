@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Supermarket.Core.Abstractions;
 using Supermarket.Core.Domain;
 using Supermarket.Core.Presentation;
+using Supermarket.Core.Receipts;
 using Supermarket.Core.Tests.Fakes;
 
 namespace Supermarket.Core.Tests.Presentation;
@@ -23,7 +24,7 @@ public class SalesPresenterTests
     public SalesPresenterTests()
     {
         _sales = new InMemorySaleRepository(_products);
-        _presenter = new SalesPresenter(_view, _sales, _products, _paymentMethods, NullLogger<SalesPresenter>.Instance);
+        _presenter = new SalesPresenter(_view, _sales, _products, _paymentMethods, new StoreInfo { Name = "Tienda de prueba" }, NullLogger<SalesPresenter>.Instance);
     }
 
     private Product Rice => _products.Items[0];
@@ -243,6 +244,30 @@ public class SalesPresenterTests
         await _presenter.CancelSelectedSaleAsync();
 
         Assert.Equal(["La venta #1 ya estaba anulada."], _view.Errors);
+    }
+
+    [Fact]
+    public async Task The_receipt_of_the_selected_sale_is_shown()
+    {
+        await RegisterRiceSaleAsync(quantity: 2);
+        _view.SelectedSaleId = 1;
+
+        await _presenter.ShowSelectedReceiptAsync();
+
+        Assert.Equal("Recibo de la venta #1", _view.ReceiptTitle);
+        Assert.Contains(_view.Receipt, line => line.Contains("TIENDA DE PRUEBA", StringComparison.Ordinal));
+        Assert.Contains(_view.Receipt, line => line == "Arroz");
+    }
+
+    [Fact]
+    public async Task The_receipt_needs_a_selected_sale()
+    {
+        await _presenter.LoadAsync();
+
+        await _presenter.ShowSelectedReceiptAsync();
+
+        Assert.Equal([SalesPresenter.ReceiptSaleRequiredMessage], _view.Messages);
+        Assert.Empty(_view.Receipt);
     }
 
     private async Task RegisterRiceSaleAsync(int quantity)

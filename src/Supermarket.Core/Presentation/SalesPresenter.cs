@@ -1,6 +1,8 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Supermarket.Core.Abstractions;
 using Supermarket.Core.Domain;
+using Supermarket.Core.Receipts;
 
 namespace Supermarket.Core.Presentation;
 
@@ -13,11 +15,13 @@ public sealed partial class SalesPresenter : PresenterBase
     internal const string PaymentMethodRequiredMessage = "Seleccione el medio de pago.";
     internal const string ClearCartQuestion = "¿Desea vaciar la venta en curso?";
     internal const string SaleRequiredMessage = "Seleccione en el historial la venta que desea anular.";
+    internal const string ReceiptSaleRequiredMessage = "Seleccione en el historial la venta cuyo recibo desea ver.";
 
     private readonly ISalesView _view;
     private readonly ISaleRepository _sales;
     private readonly IRepository<Product> _products;
     private readonly IRepository<PaymentMethod> _paymentMethods;
+    private readonly StoreInfo _store;
     private readonly ILogger _logger;
     private IReadOnlyList<Sale> _recentSales = [];
 
@@ -26,17 +30,20 @@ public sealed partial class SalesPresenter : PresenterBase
         ISaleRepository sales,
         IRepository<Product> products,
         IRepository<PaymentMethod> paymentMethods,
+        StoreInfo store,
         ILogger<SalesPresenter> logger)
         : base(view, logger)
     {
         ArgumentNullException.ThrowIfNull(sales);
         ArgumentNullException.ThrowIfNull(products);
         ArgumentNullException.ThrowIfNull(paymentMethods);
+        ArgumentNullException.ThrowIfNull(store);
 
         _view = view;
         _sales = sales;
         _products = products;
         _paymentMethods = paymentMethods;
+        _store = store;
         _logger = logger;
 
         _view.LoadRequested += async (_, _) => await LoadAsync();
@@ -46,6 +53,7 @@ public sealed partial class SalesPresenter : PresenterBase
         _view.RegisterRequested += async (_, _) => await RegisterAsync();
         _view.SaleSelected += async (_, _) => await ShowSelectedSaleAsync();
         _view.CancelSaleRequested += async (_, _) => await CancelSelectedSaleAsync();
+        _view.PrintReceiptRequested += async (_, _) => await ShowSelectedReceiptAsync();
     }
 
     public SaleDraft Draft { get; } = new();
@@ -187,6 +195,23 @@ public sealed partial class SalesPresenter : PresenterBase
                 _view.ShowMessage(CancelledMessage(sale.Id));
             },
             onNotFound: RefreshProductsAndHistoryAsync);
+    }
+
+    public Task ShowSelectedReceiptAsync()
+    {
+        var sale = _view.SelectedSaleId is { } saleId ? _recentSales.FirstOrDefault(s => s.Id == saleId) : null;
+        if (sale is null)
+        {
+            _view.ShowMessage(ReceiptSaleRequiredMessage);
+            return Task.CompletedTask;
+        }
+
+        return RunAsync(async () =>
+        {
+            var lines = await _sales.GetLinesAsync(sale.Id);
+            var receipt = ReceiptFormatter.Format(sale, lines, _store, CultureInfo.CurrentCulture);
+            _view.ShowReceipt($"Recibo de la venta #{sale.Id}", receipt);
+        });
     }
 
     private async Task RefreshProductsAndHistoryAsync()
