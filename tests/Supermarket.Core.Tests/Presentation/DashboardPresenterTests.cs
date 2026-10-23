@@ -137,6 +137,9 @@ public class DashboardPresenterTests
             return Task.FromResult<IReadOnlyList<ProductSales>>([]);
         }
 
+        public Task<IReadOnlyList<Sale>> GetSalesAsync(DateRange period, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Sale>>([]);
+
         public Task<IReadOnlyList<PaymentMethodSales>> GetSalesByPaymentMethodAsync(DateRange period, CancellationToken cancellationToken = default)
         {
             PaymentPeriod = period;

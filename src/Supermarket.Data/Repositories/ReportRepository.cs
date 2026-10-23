@@ -50,6 +50,24 @@ internal sealed class ReportRepository(IDbConnectionFactory connections) : IRepo
         return products.AsList();
     }
 
+    public async Task<IReadOnlyList<Sale>> GetSalesAsync(DateRange period, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await connections.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        var sales = await connection.QueryAsync<Sale>(new CommandDefinition(
+            """
+            SELECT s.Id, s.CreatedAt, s.CancelledAt, s.PaymentMethodId, pm.Name AS PaymentMethodName, s.Total,
+                   (SELECT SUM(l.Quantity) FROM dbo.SaleLines AS l WHERE l.SaleId = s.Id) AS ItemCount
+            FROM dbo.Sales AS s
+            INNER JOIN dbo.PaymentMethods AS pm ON pm.Id = s.PaymentMethodId
+            WHERE s.CreatedAt >= @FromUtc AND s.CreatedAt < @ToUtc
+            ORDER BY s.CreatedAt DESC, s.Id DESC;
+            """,
+            new { period.FromUtc, period.ToUtc },
+            cancellationToken: cancellationToken)).ConfigureAwait(false);
+
+        return sales.AsList();
+    }
+
     public async Task<IReadOnlyList<PaymentMethodSales>> GetSalesByPaymentMethodAsync(DateRange period, CancellationToken cancellationToken = default)
     {
         await using var connection = await connections.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);

@@ -72,6 +72,24 @@ public class ReportRepositoryTests(SqlServerFixture database) : DatabaseTest(dat
         Assert.Equal(1, (await Database.Reports.GetSalesSummaryAsync(new DateRange(boundary, boundary.AddDays(1)))).SalesCount);
     }
 
+    [Fact]
+    public async Task The_period_sales_list_includes_voided_sales_newest_first()
+    {
+        var ids = await SeedAsync();
+        var first = await Database.Sales.RegisterAsync(ids.Cash, [new SaleItem(ids.Rice, 2)]);
+        var voided = await Database.Sales.RegisterAsync(ids.Card, [new SaleItem(ids.Milk, 1)]);
+        await Database.Sales.CancelAsync(voided.SaleId);
+        var outside = await Database.Sales.RegisterAsync(ids.Cash, [new SaleItem(ids.Milk, 1)]);
+        await MoveSaleAsync(outside.SaleId, DateTime.UtcNow.AddDays(-3));
+
+        var sales = await Database.Reports.GetSalesAsync(AroundNow);
+
+        Assert.Equal([voided.SaleId, first.SaleId], sales.Select(s => s.Id));
+        Assert.True(sales[0].IsCancelled);
+        Assert.Equal(2, sales[1].ItemCount);
+        Assert.Equal("Efectivo", sales[1].PaymentMethodName);
+    }
+
     private async Task<(int Cash, int Card, int Rice, int Milk)> SeedAsync()
     {
         var grains = await Database.Categories.AddAsync(new Category { Name = "Granos" });
