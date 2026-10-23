@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Supermarket.Core/Supermarket.Core.csproj" />
+    <Project Path="src/Supermarket.Data/Supermarket.Data.csproj" />
+    <Project Path="src/Supermarket.WinForms/Supermarket.WinForms.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Supermarket.Core.Tests/Supermarket.Core.Tests.csproj" />
+    <Project Path="tests/Supermarket.Data.IntegrationTests/Supermarket.Data.IntegrationTests.csproj" />
+    <Project Path="tests/Supermarket.WinForms.Tests/Supermarket.WinForms.Tests.csproj" />
+  </Folder>
+</Solution>

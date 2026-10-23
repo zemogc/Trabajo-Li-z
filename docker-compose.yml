@@ -1,0 +1,24 @@
+# Local SQL Server for development. Not intended for production use.
+#   docker compose up -d
+# The port is published on 127.0.0.1 only, so the server is not reachable from the network.
+# Set MSSQL_SA_PASSWORD (environment variable or a git-ignored .env file) to use your own password.
+# Then point appsettings.Local.json at:
+#   Server=localhost,14333;Database=Supermarket;User Id=sa;Password=<the same password>;TrustServerCertificate=true
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Dev_Passw0rd!}"
+    ports:
+      - "127.0.0.1:14333:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sqlserver-data:
