@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Supermarket.WinForms.Infrastructure;
 
 /// <summary>Factory methods so every screen shares the same buttons, headers and grids.</summary>
@@ -39,6 +41,59 @@ internal static class Ui
         MessageBox.Show(owner, question, "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
         == DialogResult.Yes;
 
+    /// <summary>
+    /// Exports exactly what a grid shows (visible columns, current order, formatted values) to a CSV file
+    /// chosen by the user.
+    /// </summary>
+    public static void ExportToCsv(
+        IWin32Window owner,
+        DataGridView grid,
+        string suggestedName,
+        Action<string> showMessage,
+        Action<IReadOnlyList<string>> showErrors)
+    {
+        ArgumentNullException.ThrowIfNull(grid);
+        ArgumentNullException.ThrowIfNull(showMessage);
+        ArgumentNullException.ThrowIfNull(showErrors);
+
+        using var dialog = new SaveFileDialog
+        {
+            Title = "Exportar a CSV",
+            Filter = "Archivo CSV (*.csv)|*.csv",
+            FileName = $"{suggestedName} {DateTime.Now:yyyy-MM-dd HHmm}.csv",
+            OverwritePrompt = true,
+        };
+
+        if (dialog.ShowDialog(owner) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var columns = grid.Columns.Cast<DataGridViewColumn>()
+            .Where(c => c.Visible)
+            .OrderBy(c => c.DisplayIndex)
+            .ToList();
+        var rows = grid.Rows.Cast<DataGridViewRow>()
+            .Select(row => (IReadOnlyList<string>)columns
+                .Select(c => row.Cells[c.Index].FormattedValue?.ToString() ?? string.Empty)
+                .ToList());
+
+        try
+        {
+            using var writer = new StreamWriter(dialog.FileName, append: false, CsvExporter.Encoding);
+            CsvExporter.Write(writer, [.. columns.Select(c => c.HeaderText)], rows, CultureInfo.CurrentCulture.TextInfo.ListSeparator);
+            showMessage($"Exportado: {dialog.FileName}");
+        }
+        catch (IOException ex)
+        {
+            showErrors([$"No se pudo guardar el archivo. {ex.Message}"]);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            showErrors([$"No tiene permisos para guardar en esa ubicación. {ex.Message}"]);
+        }
+    }
+
     public static Label Header(string title) => new()
     {
         Text = title,
@@ -48,6 +103,39 @@ internal static class Ui
         Padding = new Padding(20, 0, 0, 0),
         TextAlign = ContentAlignment.MiddleLeft,
     };
+
+    /// <summary>Big number shown inside a <see cref="Card"/>.</summary>
+    public static Label CardValue() => new()
+    {
+        Dock = DockStyle.Fill,
+        Font = Theme.KpiFont,
+        TextAlign = ContentAlignment.MiddleLeft,
+        Text = "—",
+    };
+
+    /// <summary>White tile with a caption and a key figure.</summary>
+    public static Panel Card(string title, Label value)
+    {
+        var card = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.White,
+            Margin = new Padding(10, 0, 10, 10),
+            Padding = new Padding(16, 10, 16, 6),
+        };
+        card.Controls.Add(value);
+        card.Controls.Add(new Label { Text = title, Dock = DockStyle.Top, Height = 24, ForeColor = Theme.MutedText });
+        return card;
+    }
+
+    /// <summary>A titled area that hosts a grid.</summary>
+    public static Panel Box(string title, DataGridView grid)
+    {
+        var box = new Panel { Dock = DockStyle.Fill, Margin = new Padding(10, 6, 10, 0) };
+        box.Controls.Add(grid);
+        box.Controls.Add(Section(title));
+        return box;
+    }
 
     public static Label Section(string title) => new()
     {
