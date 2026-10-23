@@ -4,6 +4,14 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-10-23
+
+### Agregado
+
+- **Recibos:** vista previa e impresión del recibo de cualquier venta (botón *Recibo* o doble clic en el historial), en formato de impresora térmica de 80 mm. Los datos de la tienda se configuran en la sección `Store` de `appsettings.json`.
+- **Reportes:** pantalla para consultar cualquier período, con totales, todas las ventas (las anuladas aparecen tachadas y no suman), ventas por medio de pago, los 20 productos más vendidos y exportación a CSV.
+- **Log diario en archivo** en `%LOCALAPPDATA%\Supermarket\logs`, que se conserva 14 días. Los mensajes de error indican su ubicación.
+
 ## [1.0.0] - 2026-10-23
 
 Primera versión publicada. Reemplaza por completo el proyecto universitario original, que no compilaba.
@@ -27,4 +35,5 @@ Primera versión publicada. Reemplaza por completo el proyecto universitario ori
 - 159 pruebas: unitarias, de renderizado de pantallas e integración contra SQL Server 2022 con Testcontainers.
 - `build.ps1` para verificar en local (formato, build, pruebas y cobertura) y `publish.ps1` para generar el paquete.
 
+[1.1.0]: https://github.com/zemogc/Trabajo-Li-z/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/zemogc/Trabajo-Li-z/releases/tag/v1.0.0

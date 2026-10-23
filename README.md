@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/zemogc/Trabajo-Li-z?label=versi%C3%B3n)](https://github.com/zemogc/Trabajo-Li-z/releases/latest)
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/)
-[![Pruebas](https://img.shields.io/badge/pruebas-159-2ea44f)](#pruebas)
+[![Pruebas](https://img.shields.io/badge/pruebas-179-2ea44f)](#pruebas)
 
 Aplicación de escritorio para operar un supermercado: registro de ventas con control de inventario, y administración de productos, categorías, proveedores y medios de pago.
 
@@ -16,6 +16,8 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 - **Ventas:** carrito con validación de stock, medio de pago y total. Al registrar, la venta se guarda en una transacción y el stock se descuenta de forma atómica. Incluye el historial de ventas recientes con el detalle de cada una.
 - **Entradas de mercancía:** registro de lo recibido de cada proveedor, con costo unitario y observaciones. El stock se suma en la misma transacción.
 - **Anulación de ventas:** devuelve las unidades al inventario. La venta queda en el historial marcada como anulada y no cuenta en los reportes.
+- **Recibos:** vista previa e impresión del recibo de cualquier venta, en formato de impresora térmica de 80 mm, con los datos de la tienda configurables.
+- **Reportes:** ventas, ingresos, ticket promedio y unidades de cualquier período, con el detalle de cada venta, totales por medio de pago, productos más vendidos y exportación a CSV.
 - CRUD completo de productos, categorías, proveedores y medios de pago.
 - Búsqueda por código o por nombre parcial. En productos también busca por categoría y por proveedor.
 - Cada producto puede tener un proveedor habitual. Un proveedor o una categoría en uso no se puede eliminar.
@@ -25,7 +27,7 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 - Validación en dos niveles: reglas de dominio con Data Annotations y restricciones en la base de datos (`UNIQUE`, `CHECK`, `FOREIGN KEY`).
 - Mensajes claros para errores esperados: nombres duplicados, registros en uso o registros eliminados por otro usuario.
 - Base de datos creada y migrada automáticamente al iniciar, con datos de ejemplo opcionales.
-- Atajos de teclado: `Ctrl+N` nuevo, `Ctrl+F` buscar, `Enter` editar, `Supr` eliminar, `Esc` cancelar. En ventas, `Enter` en la cantidad agrega el producto y `F9` registra la venta.
+- Atajos de teclado: `Ctrl+N` nuevo, `Ctrl+F` buscar, `Enter` editar, `Supr` eliminar, `Esc` cancelar. En ventas, `Enter` en la cantidad agrega el producto, `F9` registra la venta y el doble clic en el historial abre el recibo.
 
 ![Listado de productos](docs/products.png)
 
@@ -69,6 +71,8 @@ flowchart LR
 - **Ventas sin sobreventa.** El stock se descuenta con un `UPDATE ... WHERE Stock >= @Quantity` dentro de una transacción. Si un producto no alcanza, se revierte toda la venta. Una prueba de integración lanza cinco ventas simultáneas por la última unidad y verifica que solo una se registre. Los productos se bloquean siempre en el mismo orden para evitar deadlocks.
 - **Anulación idempotente.** Marcar la venta (`UPDATE ... WHERE CancelledAt IS NULL`) y devolver el stock ocurren en la misma transacción. Si dos cajas anulan la misma venta a la vez, solo una devuelve el stock; hay una prueba de integración con cinco anulaciones simultáneas.
 - **Fechas correctas por zona horaria.** Las ventas se guardan en UTC y "hoy" se calcula según la zona horaria local con un `TimeProvider` inyectado. Así los reportes del día se prueban con un reloj fijo en lugar de depender de la hora real.
+- **Recibos como texto de ancho fijo.** `ReceiptFormatter` arma el recibo como líneas de 40 caracteres, así que el diseño se prueba sin imprimir y la UI solo lo dibuja con una fuente monoespaciada.
+- **Diagnóstico en producción.** Un log diario en `%LOCALAPPDATA%\Supermarket\logs`, que se conserva 14 días. Los mensajes de error indican dónde está, para que el usuario pueda enviar el archivo en lugar de describir el problema.
 - **El precio lo pone el servidor.** El cliente solo envía producto y cantidad. El precio unitario se toma de la base al momento de vender y queda guardado en la línea, así que un cambio de precio posterior no altera las ventas pasadas.
 - **Excepciones de dominio.** Los repositorios convierten los errores 547, 2601 y 2627 de SQL Server en `DataConflictException`, y las filas afectadas = 0 en `EntityNotFoundException`. Los presentadores nunca dependen del proveedor de base de datos.
 - **SQL seguro.** Todos los valores viajan como parámetros. Los comodines de `LIKE` (`%`, `_`, `[`) se escapan para que buscar "50%" encuentre exactamente eso.
@@ -83,6 +87,22 @@ En [Releases](https://github.com/zemogc/Trabajo-Li-z/releases/latest) está el p
 1. Descomprime el zip en una carpeta.
 2. Revisa la cadena de conexión en `appsettings.json`. Por defecto usa SQL Server LocalDB, que viene con Visual Studio y SQL Server Express.
 3. Ejecuta `Supermarket.exe`. La primera vez crea la base de datos y carga datos de ejemplo.
+
+### Configuración
+
+Además de la cadena de conexión, `appsettings.json` tiene la sección `Store` con los datos que se imprimen en los recibos:
+
+```json
+"Store": {
+  "Name": "Supermercado El Ahorro",
+  "TaxId": "900.123.456-7",
+  "Address": "Calle 10 # 5-20, Cali",
+  "Phone": "602 555 0101",
+  "Footer": "¡Gracias por su compra!"
+}
+```
+
+El log se puede guardar en otra carpeta con `Logging:File:Path`.
 
 ## Requisitos para desarrollar
 
@@ -157,8 +177,8 @@ Cobertura de líneas medida con `build.ps1`:
 | Capa | Cobertura |
 | --- | --- |
 | `Supermarket.Core` | 95 % |
-| `Supermarket.Data` | 97 % |
-| `Supermarket.WinForms` | 70 % |
+| `Supermarket.Data` | 98 % |
+| `Supermarket.WinForms` | 69 % |
 
 La lógica vive en `Core` y `Data`, que están cubiertos casi por completo. En la capa WinForms, además de probar sus componentes no visuales, hay pruebas de humo que construyen cada pantalla fuera de pantalla, le pasan datos por su interfaz de vista y la dibujan a una imagen, sin abrir ninguna ventana. Las rutas de arranque y los diálogos se prueban manualmente.
 
