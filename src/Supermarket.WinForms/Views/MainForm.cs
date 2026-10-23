@@ -17,8 +17,8 @@ internal sealed class MainForm : Form
         ArgumentNullException.ThrowIfNull(modules);
 
         Text = "Supermercado";
-        MinimumSize = new Size(1000, 620);
-        Size = new Size(1200, 720);
+        MinimumSize = new Size(1100, 640);
+        Size = new Size(1320, 760);
         StartPosition = FormStartPosition.CenterScreen;
 
         Controls.Add(_content);

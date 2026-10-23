@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
+using Supermarket.Core.Domain;
 
 namespace Supermarket.Data.IntegrationTests;
 
@@ -20,6 +21,35 @@ public class DatabaseInitializerTests(SqlServerFixture database) : DatabaseTest(
         Assert.Equal(categories.Count, (await Database.Categories.GetAllAsync()).Count);
         Assert.Equal(products.Count, (await Database.Products.GetAllAsync()).Count);
         Assert.All(products, p => Assert.False(string.IsNullOrEmpty(p.CategoryName)));
+        Assert.Equal(2, products.Count(p => p.IsLowStock));
+    }
+
+    [Fact]
+    public async Task Upgrades_databases_created_before_minimum_stock_existed()
+    {
+        var connectionString = new SqlConnectionStringBuilder(Database.ConnectionString)
+        {
+            InitialCatalog = $"Supermarket_{Guid.NewGuid():N}",
+        }.ConnectionString;
+        var initializer = new DatabaseInitializer(connectionString, NullLogger<DatabaseInitializer>.Instance);
+        await initializer.InitializeAsync(seedSampleData: true);
+
+        // Recreate the v1 shape of the table, which had no MinimumStock column.
+        await using (var connection = new SqlConnection(connectionString))
+        {
+            await connection.ExecuteAsync(
+                """
+                ALTER TABLE dbo.Products DROP CONSTRAINT CK_Products_MinimumStock, DF_Products_MinimumStock;
+                ALTER TABLE dbo.Products DROP COLUMN MinimumStock;
+                """);
+        }
+
+        await initializer.InitializeAsync(seedSampleData: false);
+
+        await using var upgraded = new SqlConnection(connectionString);
+        var minimums = (await upgraded.QueryAsync<int>("SELECT MinimumStock FROM dbo.Products;")).ToList();
+        Assert.Equal(6, minimums.Count);
+        Assert.All(minimums, value => Assert.Equal(Product.DefaultMinimumStock, value));
     }
 
     [Fact]

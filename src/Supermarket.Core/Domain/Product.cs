@@ -10,6 +10,7 @@ public sealed class Product : IEntity
 {
     public const int NameMaxLength = 100;
     public const double MaxPrice = 999_999_999.99;
+    public const int DefaultMinimumStock = 5;
 
     [DisplayName("Código")]
     public int Id { get; set; }
@@ -27,6 +28,11 @@ public sealed class Product : IEntity
     [Range(0, int.MaxValue, ErrorMessage = "El stock no puede ser negativo.")]
     public int Stock { get; set; }
 
+    /// <summary>Reorder level: at or below this quantity the product needs restocking.</summary>
+    [DisplayName("Stock mínimo")]
+    [Range(0, int.MaxValue, ErrorMessage = "El stock mínimo no puede ser negativo.")]
+    public int MinimumStock { get; set; } = DefaultMinimumStock;
+
     [DisplayName("Categoría")]
     [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar una categoría.")]
     public int CategoryId { get; set; }
@@ -38,6 +44,8 @@ public sealed class Product : IEntity
     public string? CategoryName { get; set; }
 
     public bool IsNew => Id == 0;
+
+    public bool IsLowStock => Stock <= MinimumStock;
 
     public override string ToString() => Name;
 }

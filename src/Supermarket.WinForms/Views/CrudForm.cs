@@ -78,7 +78,7 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
             _bindingSource.Position = index;
         }
 
-        _countLabel.Text = entities.Count == 1 ? "1 registro" : $"{entities.Count} registros";
+        _countLabel.Text = DescribeEntities(entities);
     }
 
     public void OpenEditor(TEntity entity)
@@ -132,14 +132,37 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
 
     protected abstract TEntity ReadEditorValues();
 
-    protected void AddColumn(string property, string header, float fillWeight = 100, string? format = null, bool alignRight = false)
+    /// <summary>Text for the record counter in the status bar.</summary>
+    protected virtual string DescribeEntities(IReadOnlyList<TEntity> entities)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        return entities.Count == 1 ? "1 registro" : $"{entities.Count} registros";
+    }
+
+    /// <summary>Highlights the rows whose entity matches <paramref name="predicate"/> as warnings.</summary>
+    protected void HighlightRowsWhen(Func<TEntity, bool> predicate)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        _grid.CellFormatting += (_, e) =>
+        {
+            if (e.RowIndex >= 0 && e.CellStyle is not null
+                && _grid.Rows[e.RowIndex].DataBoundItem is TEntity entity && predicate(entity))
+            {
+                e.CellStyle.BackColor = Theme.WarningBackground;
+                e.CellStyle.ForeColor = Theme.Warning;
+            }
+        };
+    }
+
+    protected void AddColumn(string property, string header, float fillWeight = 100, string? format = null, bool alignRight = false, int minimumWidth = 70)
     {
         var column = new DataGridViewTextBoxColumn
         {
             DataPropertyName = property,
             HeaderText = header,
             FillWeight = fillWeight,
-            MinimumWidth = 80,
+            MinimumWidth = minimumWidth,
             SortMode = DataGridViewColumnSortMode.NotSortable,
         };
 
@@ -275,6 +298,7 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
         _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         _grid.RowHeadersVisible = false;
+        _grid.ScrollBars = ScrollBars.Vertical;
         _grid.BackgroundColor = Color.White;
         _grid.BorderStyle = BorderStyle.None;
         _grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
@@ -289,6 +313,7 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
         _grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = Theme.MutedText;
         _grid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
         _grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(6, 0, 6, 0);
+        _grid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
         _grid.DefaultCellStyle.Padding = new Padding(6, 0, 6, 0);
         _grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
         _grid.DefaultCellStyle.SelectionForeColor = Theme.Text;
@@ -319,7 +344,7 @@ internal abstract class CrudForm<TEntity> : Form, ICrudView<TEntity>
     private void BuildEditorPanel()
     {
         _editorPanel.Dock = DockStyle.Right;
-        _editorPanel.Width = 340;
+        _editorPanel.Width = 320;
         _editorPanel.Padding = new Padding(20, 4, 20, 20);
         _editorPanel.BackColor = Color.White;
         _editorPanel.Visible = false;
