@@ -98,6 +98,30 @@ public class FormRenderingTests
         Render(form, "dashboard.png");
     });
 
+    [Fact]
+    public void Stock_entry_screen_renders_an_entry_in_progress() => RunOnStaThread(() =>
+    {
+        using var form = new StockEntryForm();
+        Prepare(form);
+
+        form.DisplayProviders(Providers);
+        form.DisplayProducts(Products);
+        form.DisplayDraft(
+            [
+                new StockEntryLine { ProductId = 1, ProductName = "Arroz 1 kg", Quantity = 24, UnitCost = 3500m },
+                new StockEntryLine { ProductId = 2, ProductName = "Queso campesino 500 g", Quantity = 10, UnitCost = 8200m },
+            ],
+            (24 * 3500m) + (10 * 8200m));
+        form.DisplayRecentEntries(
+        [
+            new StockEntry { Id = 1, CreatedAt = DateTime.UtcNow.AddDays(-2), ProviderName = "Distribuidora del Valle", ItemCount = 48, TotalCost = 168000m },
+        ]);
+
+        Assert.Null(form.SelectedProviderId);
+        Assert.Equal(1, form.Quantity);
+        Render(form, "stock-entries.png");
+    });
+
     private static void Prepare(Form form)
     {
         // Hosted like MainForm does it: as a child window. A child of no visible parent is

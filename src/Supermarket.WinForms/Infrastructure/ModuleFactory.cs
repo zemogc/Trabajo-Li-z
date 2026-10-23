@@ -18,6 +18,7 @@ internal sealed class ModuleFactory(IServiceProvider services)
     [
         new("Inicio", Infrastructure.Glyph.Home, () => CreateDashboard(services)),
         new("Ventas", Infrastructure.Glyph.Sale, () => CreateSales(services)),
+        new("Entradas", Infrastructure.Glyph.StockEntry, () => CreateStockEntries(services)),
         new("Productos", Infrastructure.Glyph.Product, () => CreateProducts(services)),
         new("Categorías", Infrastructure.Glyph.Category, () => CreateCatalog<Category>(services, "Categorías")),
         new("Proveedores", Infrastructure.Glyph.Provider, () => CreateCatalog<Provider>(services, "Proveedores")),
@@ -35,6 +36,13 @@ internal sealed class ModuleFactory(IServiceProvider services)
     {
         var view = new SalesForm();
         ActivatorUtilities.CreateInstance<SalesPresenter>(services, view);
+        return view;
+    }
+
+    private static StockEntryForm CreateStockEntries(IServiceProvider services)
+    {
+        var view = new StockEntryForm();
+        ActivatorUtilities.CreateInstance<StockEntryPresenter>(services, view);
         return view;
     }
 
