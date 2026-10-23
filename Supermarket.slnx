@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Supermarket.Core/Supermarket.Core.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Supermarket.Core.Tests/Supermarket.Core.Tests.csproj" />
+  </Folder>
 </Solution>
