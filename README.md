@@ -29,9 +29,13 @@ Construida con **.NET 10**, **Windows Forms** y **SQL Server**, siguiendo el pat
 - Base de datos creada y migrada automáticamente al iniciar, con datos de ejemplo opcionales.
 - Atajos de teclado: `Ctrl+N` nuevo, `Ctrl+F` buscar, `Enter` editar, `Supr` eliminar, `Esc` cancelar. En ventas, `Enter` en la cantidad agrega el producto, `F9` registra la venta y el doble clic en el historial abre el recibo.
 
-![Listado de productos](docs/products.png)
+### Capturas
 
-![Edición de un producto](docs/product-editor.png)
+| Ventas | Reportes |
+| --- | --- |
+| ![Pantalla de ventas con el detalle de una venta](docs/sales.png) | ![Reporte de ventas del mes](docs/reports.png) |
+
+![Edición de un producto con categoría, proveedor y stock mínimo](docs/product-editor.png)
 
 ## Arquitectura
 
@@ -206,3 +210,7 @@ Las pruebas de integración usan [Testcontainers](https://dotnet.testcontainers.
 ## Origen
 
 El proyecto nació como un parcial universitario de la materia de Lenguajes de Programación: un CRUD en un solo proyecto WinForms sobre .NET 7. Después se reestructuró por completo con la arquitectura, las pruebas y las prácticas descritas arriba.
+
+## Agradecimientos
+
+Agradezco al profesor **Luis Yovany Romo Portilla**, quien me dio la oportunidad de desarrollar este proyecto en C#. Su enseñanza aportó de manera muy positiva a que hoy sea el desarrollador de software que soy.
